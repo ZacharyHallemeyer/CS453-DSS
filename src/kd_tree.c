@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include "kd_tree.h"
+#include "../include/kd_tree.h"
 
 
 // function implementation
