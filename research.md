@@ -59,4 +59,27 @@ dimension.
 
 ### Real-Time KD-Tree Construction on Graphics Hardware: http://www.kunzhou.net/2008/kdtree.pdf
 
-### Massively parallel KD-tree construction and nearest neighbor search algorithms: https://ieeexplore-ieee-org.libproxy.nau.edu/document/7169256
+
+### Massively parallel KD-tree construction and nearest neighbor search algorithms: https://arizona-nau.primo.exlibrisgroup.com/discovery/fulldisplay?docid=cdi_ieee_primary_7169256&context=PC&vid=01NAU_INST:01NAU&lang=en&search_scope=MyInst_and_CI&adaptor=Primo%20Central&tab=Everything&query=any,contains,Massively%20parallel%20KD-tree%20construction%20and%20nearest%20neighbor%20search%20algorithms&facet=rtype,exclude,reviews
+
+
+### An Improved Method to Build the KD Tree Based on Presorted Results: https://arizona-nau.primo.exlibrisgroup.com/discovery/fulldisplay?docid=cdi_ieee_primary_9237636&context=PC&vid=01NAU_INST:01NAU&lang=en&search_scope=MyInst_and_CI&adaptor=Primo%20Central&tab=Everything&query=any,contains,balanced%20kd-tree%20construction&offset=0
+The main idea of this article is to tackle the problem of balance within a
+kd-tree. "Balance" refers to when one side of the tree contains more sub-trees
+than the other. For example, the worst case scenario for a binary search tree
+(BST) is if the tree becomes a list:
+```
+a
+ \
+  b
+   \
+    c
+     \
+      d
+       ...
+```
+The solution presented by others has been to find the "median point" along
+which to split the space which would result in each space to be split, more or
+less, down the middle. Unfortunately, most of the solutions presented at the
+time of the above paper's publication had results uncertain results or the
+methods were time consuming. The above publication seeks to provide a solution.
