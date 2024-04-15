@@ -34,7 +34,21 @@ using namespace std;
 //function prototypes
 void warmUpGPU();
 void checkParams(unsigned int N, unsigned int DIM);
+
+// cpu code
 void calcDistMatCPU(float* dataset, unsigned int N, unsigned int DIM);
+
+// gpu code
+
+// handling data
+void importDataset(
+    char* fname,
+    unsigned int N,
+    unsigned int DIM,
+    float* dataset
+);
+
+
 
 int main(int argc, char* argv[])
 {
@@ -53,9 +67,9 @@ int main(int argc, char* argv[])
         exit(0);
     }
 
-    sscanf(argv[1],"%d",&N);
-    sscanf(argv[2],"%d",&DIM);
-    sscanf(argv[3],"%f",&epsilon);
+    sscanf(argv[1], "%d", &N);
+    sscanf(argv[2], "%d", &DIM);
+    sscanf(argv[3], "%f", &epsilon);
     strcpy(inputFname,argv[4]);
 
     checkParams(N, DIM);
@@ -158,6 +172,7 @@ void checkParams(unsigned int N, unsigned int DIM)
 }
 
 
+
 void calcDistMatCPU(float* dataset, unsigned int N, unsigned int DIM)
 {
     // initialize kd-tree with first point
@@ -166,4 +181,56 @@ void calcDistMatCPU(float* dataset, unsigned int N, unsigned int DIM)
     {
         // add point to tree
     }
+}
+
+
+
+void importDataset(
+        char* fname,
+        unsigned int N,
+        unsigned int DIM,
+        float* dataset
+) {
+    FILE *fp = fopen(fname, "r");
+
+    if (!fp)
+    {
+        fprintf(stderr, "Unable to open file\n");
+        fprintf(stderr, "Error: dataset was not imported. Returning.");
+        exit(0);
+    }
+
+    unsigned int bufferSize = DIM * 10;
+
+    char buf[bufferSize];
+    unsigned int rowCnt = 0;
+    unsigned int colCnt = 0;
+    while (fgets(buf, bufferSize, fp) && rowCnt < N)
+    {
+        colCnt = 0;
+
+        char *field = strtok(buf, ",");
+        double tmp;
+        sscanf(field, "%lf", &tmp);
+        
+        dataset[rowCnt * DIM + colCnt] = tmp;
+
+        
+        while (field)
+        {
+            colCnt += 1;
+            field = strtok(NULL, ",");
+
+            if (field!=NULL)
+            {
+                double tmp;
+                sscanf(field,"%lf",&tmp);
+                dataset[rowCnt*DIM+colCnt]=tmp;
+            }
+        }
+
+        rowCnt += 1;
+    }
+
+    fclose(fp);
 }
