@@ -92,9 +92,12 @@ int main(int argc, char* argv[])
     //It only computes the distance matrix but does not query the distance matrix
     if (MODE == 0)
     {
+        // TODO: can move once we know more about allocating space on the GPU
+        struct kd_tree* tree = (struct kd_tree*)malloc(sizeof(struct kd_tree));
         // Calculate with CPU implementation
         // TODO: IMPLEMENT CPU IMPLEMENTATION
-        calcDistMatCPU(dataset, N, DIM);
+        calcDistMatCPU(dataset, tree, N, DIM);
+        // TODO: query kd-tree
 
         return(0);
     }
@@ -173,9 +176,13 @@ void checkParams(unsigned int N, unsigned int DIM)
 
 
 
-void calcDistMatCPU(float* dataset, unsigned int N, unsigned int DIM)
-{
-    // initialize kd-tree with first point
+void calcDistMatCPU(
+        float* dataset,
+        struct kd_tree* tree,  // double pointer?
+        unsigned int N,
+        unsigned int DIM
+) {
+    init_kd_tree(tree, dataset, DIM);
 
     // loop over points
     {

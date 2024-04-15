@@ -26,14 +26,16 @@ struct kd_tree_node
 void init_kd_tree(
     struct kd_tree* tree,
     const float* data,
-    const unsigned int DIM
+    const unsigned int dim
 );
 
 void init_kd_tree_node(
     struct kd_tree_node* node,
     const float* data,
-    const unsigned int DIM,
+    const unsigned int dim,
     const unsigned int level
 );
 
 void insert_data(struct kd_tree* tree, const float* data);
+
+void show(struct kd_tree* tree);
