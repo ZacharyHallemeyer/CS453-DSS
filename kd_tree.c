@@ -27,8 +27,18 @@ void init_kd_tree_node(
     node->metric = data[level % DIM];
     node->left = NULL;
     node->right = NULL;
+
+    node->point = malloc( sizeof(float) * DIM );
+
+    for(unsigned int index = 0; index < DIM; index++)
+    {
+      node->point[index] = data[level * DIM + index];
+    }
 }
 
 void insert_data(struct kd_tree* tree, const float* data)
 {
+
+
+
 }
