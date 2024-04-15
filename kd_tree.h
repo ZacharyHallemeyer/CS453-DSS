@@ -17,7 +17,8 @@ struct kd_tree_node
     float metric;
     // dimensions of the point represented by this node
     float* point;
-    struct kd_tree_node* next;
+    struct kd_tree_node* left;
+    struct kd_tree_node* right;
 };
 
 

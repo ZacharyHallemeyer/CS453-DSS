@@ -25,7 +25,8 @@ void init_kd_tree_node(
 ) {
     node->level = level;
     node->metric = data[level % DIM];
-    node->next = NULL;
+    node->left = NULL;
+    node->right = NULL;
 }
 
 void insert_data(struct kd_tree* tree, const float* data)
