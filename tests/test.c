@@ -10,6 +10,7 @@
 // for testing with points in 2 dimensions
 #define DIM 2
 
+
 // function prototypes
 void fill_dataset(float* dataset);
 
@@ -24,7 +25,7 @@ int main(int argc, char** argv)
     init_kd_tree(tree, dataset, DIM);
     for (unsigned int i = 0; i < N; i += 1)
     {
-        insert(tree, dataset[i * N], DIM);
+        insert(&tree->head, dataset, i, DIM, tree->head->level);
     }
     show(tree);
     
@@ -32,6 +33,7 @@ int main(int argc, char** argv)
 }
 
 
+// function implementation
 void fill_dataset(float* dataset)
 {
     // fill first point
