@@ -42,8 +42,8 @@ The tree now looks like this:
     b
    / \
   a   c
- /
-k
+     /
+    k
 ```
 This appears counter intuative because 'k' has a greater value than 'a'
 alphabetically; however, we chose to split this level in the kd-tree along the

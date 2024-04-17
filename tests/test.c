@@ -22,6 +22,10 @@ int main(int argc, char** argv)
     fill_dataset(dataset);
 
     init_kd_tree(tree, dataset, DIM);
+    for (unsigned int i = 0; i < N; i += 1)
+    {
+        insert(tree, dataset[i * N], DIM);
+    }
     show(tree);
     
     return 0;

@@ -36,6 +36,6 @@ void init_kd_tree_node(
     const unsigned int level
 );
 
-void insert_data(struct kd_tree* tree, const float* data);
+void insert(struct kd_tree* tree, const float* data);
 
 void show(struct kd_tree* tree);
