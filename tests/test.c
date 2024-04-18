@@ -17,17 +17,30 @@ void fill_dataset(float* dataset);
 
 int main(int argc, char** argv)
 {
-    struct kd_tree* tree = (struct kd_tree*)malloc(sizeof(struct kd_tree));
     float* dataset = (float*)malloc(sizeof(float) * N * DIM);
+    struct kd_tree* tree;
 
     fill_dataset(dataset);
 
-    init_kd_tree(tree, dataset, DIM);
+    init_kd_tree(&tree);
+
     for (unsigned int i = 0; i < N; i += 1)
     {
-        insert(&tree->head, dataset, i, DIM, tree->head->level);
+        struct kd_tree_node* node;
+        float data[2];
+
+        for (unsigned int d = 0; d < DIM; d += 1)
+        {
+            data[d] = dataset[i * DIM + d];
+        }
+
+        init_kd_tree_node(&node, data, DIM, 0);
+        insert(&tree->head, &node);
     }
-    show(tree);
+
+    print_tree(tree->head);
+
+    // free_kd_tree(&tree->head);
     
     return 0;
 }

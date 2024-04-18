@@ -5,16 +5,12 @@
 
 
 // function implementation
-void init_kd_tree(
-        struct kd_tree* tree,
-        const float* data,
-        const unsigned int dim
-) {
-    struct kd_tree_node* head = NULL;
-    init_kd_tree_node(&head, data, dim, 0);
+void init_kd_tree(struct kd_tree** tree)
+{
+    *tree = (struct kd_tree*)malloc(sizeof(struct kd_tree));
 
-    tree->height = 0;
-    tree->head = head;
+    (*tree)->height = 0;
+    (*tree)->head = NULL;
 }
 
 void init_kd_tree_node(
@@ -26,45 +22,71 @@ void init_kd_tree_node(
     *node = (struct kd_tree_node*)malloc(sizeof(struct kd_tree_node));
     (*node)->level = level;
     (*node)->metric = data[level % dim];
-    // TODO: add data for point
+    (*node)->dim = dim;
+    (*node)->data = (float*)malloc(sizeof(float) * dim);
     (*node)->left = NULL;
     (*node)->right = NULL;
+
+    for (unsigned int d = 0; d < dim; d += 1)
+    {
+        (*node)->data[d] = data[d];
+    }
 }
 
-void insert(
-        struct kd_tree_node** node,
-        const float* data,
-        const unsigned int p,
-        const unsigned int dim,
-        const unsigned int level
-) {
-    unsigned int p_idx = p * dim + ((*node)->level % dim);
-    
+void insert(struct kd_tree_node** node, struct kd_tree_node** new_node)
+{
     if (*node == NULL)
     {
-        init_kd_tree_node(node, data, dim, (*node)->level + 1);
+        *node = *new_node;
+        (*new_node)->level = 0;
     }
-    if (data[p_idx] < (*node)->metric)
+    else if ((*new_node)->data[(*node)->level % (*node)->dim]
+                 < (*node)->metric)
     {
-        insert(&(*node)->left, data, p, dim, (*node)->level + 1);
+        insert(&(*node)->left, new_node);
     }
-    else if (data[p_idx] > (*node)->metric)
+    else if ((*new_node)->data[(*node)->level % (*node)->dim]
+                 > (*node)->metric)
     {
-        insert(&(*node)->right, data, p, dim, (*node)->level + 1);
+        insert(&(*node)->right, new_node);
+    }
+    else
+    {
+        *node = *new_node;
+        (*new_node)-> level = (*node)->level = 0;
     }
 }
 
-void show(struct kd_tree* tree)
+void print_tree(struct kd_tree_node* node)
 {
-    struct kd_tree_node* working_node = tree->head;
+    if (node == NULL)
+    {
+        return;
+    }
 
-    // TODO: implement tree traversal
+    if (node->left != NULL)
+    {
+        print_tree(node->left);
+    }
+
+    printf("{");
     printf(
-        // TODO: change 'left' and 'right' to be the addresses of the children
-        "{ level: %u, metric: %f, left: %d, right: %d }\n",
-        working_node->level,
-        working_node->metric,
-        working_node->left,
-        working_node->right
+        " level: %u, metric: %f, left: %d, right: %d,",
+        node->level,
+        node->metric,
+        node->left,
+        node->right
     );
+    printf(" data: { %f", node->data[0]);
+    for (unsigned int d = 0; d < node->dim; d += 1)
+    {
+        printf(", %f", node->data[d]);
+    }
+    printf(" }");
+    printf(" },\n");
+
+    if (node->right != NULL)
+    {
+        print_tree(node->right);
+    }
 }
