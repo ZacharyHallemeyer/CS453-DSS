@@ -86,16 +86,16 @@ void print_tree(struct kd_tree_node* node)
 
     printf("{");
     printf(
-        " level: %u, metric: %f, left: %d, right: %d,",
+        " level: %5u, metric: % 9.2f, left: %9d, right: %9d,",
         node->level,
         node->metric,
         node->left,
         node->right
     );
-    printf(" data: { %f", node->data[0]);
+    printf(" data: { % 9.2f", node->data[0]);
     for (unsigned int d = 1; d < node->dim; d += 1)
     {
-        printf(", %f", node->data[d]);
+        printf(", % 9.2f", node->data[d]);
     }
     printf(" }");
     printf(" },\n");
