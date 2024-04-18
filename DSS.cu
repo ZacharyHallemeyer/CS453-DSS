@@ -212,10 +212,10 @@ void importDataset(
         char *field = strtok(buf, ",");
         double tmp;
         sscanf(field, "%lf", &tmp);
-        
+
         dataset[rowCnt * DIM + colCnt] = tmp;
 
-        
+
         while (field)
         {
             colCnt += 1;
