@@ -90,3 +90,31 @@ void print_tree(struct kd_tree_node* node)
         print_tree(node->right);
     }
 }
+
+void free_kd_tree(struct kd_tree** tree)
+{
+    __free_kd_tree(&(*tree)->head);
+
+    free(*tree);
+}
+
+
+void __free_kd_tree(struct kd_tree_node** node)
+{
+    if (*node == NULL)
+    {
+        return;
+    }
+
+    if ((*node)->left != NULL)
+    {
+        __free_kd_tree(&(*node)->left);
+    }
+
+    if ((*node)->right != NULL)
+    {
+        __free_kd_tree(&(*node)->right);
+    }
+
+    free(*node);
+}

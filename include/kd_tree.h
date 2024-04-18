@@ -42,4 +42,7 @@ void insert(struct kd_tree_node** node, struct kd_tree_node** new_node);
 void print_tree(struct kd_tree_node* node);
 
 
-void free_kd_tree(struct kd_tree_node** node);
+void free_kd_tree(struct kd_tree** tree);
+
+
+void __free_kd_tree(struct kd_tree_node** node);

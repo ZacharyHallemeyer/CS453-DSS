@@ -40,7 +40,7 @@ int main(int argc, char** argv)
 
     print_tree(tree->head);
 
-    // free_kd_tree(&tree->head);
+    free_kd_tree(&tree);
     
     return 0;
 }
