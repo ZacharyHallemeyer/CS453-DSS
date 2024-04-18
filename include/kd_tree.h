@@ -6,7 +6,7 @@ struct kd_tree
 {
     // provides an easy way to get the height of the tree
     unsigned int height;
-    struct kd_tree_node* head;
+    struct kd_tree_node* root;
 };
 
 struct kd_tree_node

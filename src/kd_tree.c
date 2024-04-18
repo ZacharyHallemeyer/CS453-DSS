@@ -10,7 +10,7 @@ void init_kd_tree(struct kd_tree** tree)
     *tree = (struct kd_tree*)malloc(sizeof(struct kd_tree));
 
     (*tree)->height = 0;
-    (*tree)->head = NULL;
+    (*tree)->root = NULL;
 }
 
 void init_kd_tree_node(
@@ -36,16 +36,16 @@ void init_kd_tree_node(
 
 void insert(struct kd_tree** tree, struct kd_tree_node** new_node)
 {
-    if ((*tree)->head == NULL)
+    if ((*tree)->root == NULL)
     {
-        (*tree)->head = *new_node;
+        (*tree)->root = *new_node;
         (*new_node)->level = 0;
         (*new_node)->metric =
             (*new_node)->data[(*new_node)->level % (*new_node)->dim];
     }
     else
     {
-        __insert(&(*tree)->head, new_node, 0);
+        __insert(&(*tree)->root, new_node, 0);
     }
 }
 
@@ -108,7 +108,7 @@ void print_tree(struct kd_tree_node* node)
 
 void free_kd_tree(struct kd_tree** tree)
 {
-    __free_kd_tree(&(*tree)->head);
+    __free_kd_tree(&(*tree)->root);
 
     free(*tree);
 }

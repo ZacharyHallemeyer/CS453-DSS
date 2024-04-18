@@ -20,19 +20,10 @@ int main(int argc, char** argv)
     float* dataset = (float*)malloc(sizeof(float) * N * DIM);
 
     struct kd_tree* tree;
-    // struct kd_tree_node* head;
-    // struct kd_tree_node* node;
 
     fill_dataset(dataset);
 
-    // float head_data[2] = { dataset[0], dataset[1] };
-    // float node_data[2] = { dataset[2], dataset[3] };
-
     init_kd_tree(&tree);
-    // init_kd_tree_node(&head, head_data, DIM, 0);
-    // init_kd_tree_node(&node, node_data, DIM, 0);
-    // insert(&tree, &head);
-    // insert(&tree, &node);
 
     for (unsigned int p = 0; p < N; p += 1)
     {
@@ -48,7 +39,7 @@ int main(int argc, char** argv)
         insert(&tree, &node);
     }
 
-    print_tree(tree->head);
+    print_tree(tree->root);
 
     free_kd_tree(&tree);
     
