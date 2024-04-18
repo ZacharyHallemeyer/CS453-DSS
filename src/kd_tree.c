@@ -5,6 +5,71 @@
 
 
 // function implementation
+void __closest_point(
+    struct kd_tree_node** node,
+    const float* data,
+    const unsigned int dim
+) {
+}
+
+
+void __free_kd_tree(struct kd_tree_node** node)
+{
+    if (*node == NULL)
+    {
+        return;
+    }
+
+    if ((*node)->left != NULL)
+    {
+        __free_kd_tree(&(*node)->left);
+    }
+
+    if ((*node)->right != NULL)
+    {
+        __free_kd_tree(&(*node)->right);
+    }
+
+    free(*node);
+}
+
+
+void __insert(
+    struct kd_tree_node** node,
+    struct kd_tree_node** new_node,
+    const unsigned int level
+) {
+    if (*node == NULL)
+    {
+        *node = *new_node;
+        (*new_node)->level = level + 1;
+        (*new_node)->metric =
+            (*new_node)->data[(*new_node)->level % (*new_node)->dim];
+    }
+    else if ((*new_node)->data[level % (*new_node)->dim] < (*node)->metric)
+    {
+        __insert(&(*node)->left, new_node, (*node)->level);
+    }
+    else if ((*new_node)->data[level % (*new_node)->dim] > (*node)->metric)
+    {
+        __insert(&(*node)->right, new_node, (*node)->level);
+    }
+}
+
+
+void closest_point(struct kd_tree** tree, float* data, const unsigned int dim)
+{
+}
+
+
+void free_kd_tree(struct kd_tree** tree)
+{
+    __free_kd_tree(&(*tree)->root);
+
+    free(*tree);
+}
+
+
 void init_kd_tree(struct kd_tree** tree)
 {
     *tree = (struct kd_tree*)malloc(sizeof(struct kd_tree));
@@ -12,6 +77,7 @@ void init_kd_tree(struct kd_tree** tree)
     (*tree)->height = 0;
     (*tree)->root = NULL;
 }
+
 
 void init_kd_tree_node(
         struct kd_tree_node** node,
@@ -50,28 +116,6 @@ void insert(struct kd_tree** tree, struct kd_tree_node** new_node)
 }
 
 
-void __insert(
-    struct kd_tree_node** node,
-    struct kd_tree_node** new_node,
-    const unsigned int level
-) {
-    if (*node == NULL)
-    {
-        *node = *new_node;
-        (*new_node)->level = level + 1;
-        (*new_node)->metric =
-            (*new_node)->data[(*new_node)->level % (*new_node)->dim];
-    }
-    else if ((*new_node)->data[level % (*new_node)->dim] < (*node)->metric)
-    {
-        __insert(&(*node)->left, new_node, (*node)->level);
-    }
-    else if ((*new_node)->data[level % (*new_node)->dim] > (*node)->metric)
-    {
-        __insert(&(*node)->right, new_node, (*node)->level);
-    }
-}
-
 void print_tree(struct kd_tree_node* node)
 {
     if (node == NULL)
@@ -104,32 +148,4 @@ void print_tree(struct kd_tree_node* node)
     {
         print_tree(node->right);
     }
-}
-
-void free_kd_tree(struct kd_tree** tree)
-{
-    __free_kd_tree(&(*tree)->root);
-
-    free(*tree);
-}
-
-
-void __free_kd_tree(struct kd_tree_node** node)
-{
-    if (*node == NULL)
-    {
-        return;
-    }
-
-    if ((*node)->left != NULL)
-    {
-        __free_kd_tree(&(*node)->left);
-    }
-
-    if ((*node)->right != NULL)
-    {
-        __free_kd_tree(&(*node)->right);
-    }
-
-    free(*node);
 }
