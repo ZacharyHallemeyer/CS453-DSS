@@ -21,7 +21,7 @@ void init_kd_tree_node(
 ) {
     *node = (struct kd_tree_node*)malloc(sizeof(struct kd_tree_node));
     (*node)->level = level;
-    (*node)->metric = data[level % dim];
+    (*node)->metric = 0;
     (*node)->dim = dim;
     (*node)->data = (float*)malloc(sizeof(float) * dim);
     (*node)->left = NULL;
@@ -33,27 +33,42 @@ void init_kd_tree_node(
     }
 }
 
-void insert(struct kd_tree_node** node, struct kd_tree_node** new_node)
+
+void insert(struct kd_tree** tree, struct kd_tree_node** new_node)
 {
-    if (*node == NULL)
+    if ((*tree)->head == NULL)
     {
-        *node = *new_node;
+        (*tree)->head = *new_node;
         (*new_node)->level = 0;
-    }
-    else if ((*new_node)->data[(*node)->level % (*node)->dim]
-                 < (*node)->metric)
-    {
-        insert(&(*node)->left, new_node);
-    }
-    else if ((*new_node)->data[(*node)->level % (*node)->dim]
-                 > (*node)->metric)
-    {
-        insert(&(*node)->right, new_node);
+        (*new_node)->metric =
+            (*new_node)->data[(*new_node)->level % (*new_node)->dim];
     }
     else
     {
+        __insert(&(*tree)->head, new_node, 0);
+    }
+}
+
+
+void __insert(
+    struct kd_tree_node** node,
+    struct kd_tree_node** new_node,
+    const unsigned int level
+) {
+    if (*node == NULL)
+    {
         *node = *new_node;
-        (*new_node)-> level = (*node)->level = 0;
+        (*new_node)->level = level + 1;
+        (*new_node)->metric =
+            (*new_node)->data[(*new_node)->level % (*new_node)->dim];
+    }
+    else if ((*new_node)->data[level % (*new_node)->dim] < (*node)->metric)
+    {
+        __insert(&(*node)->left, new_node, (*node)->level);
+    }
+    else if ((*new_node)->data[level % (*new_node)->dim] > (*node)->metric)
+    {
+        __insert(&(*node)->right, new_node, (*node)->level);
     }
 }
 
@@ -78,7 +93,7 @@ void print_tree(struct kd_tree_node* node)
         node->right
     );
     printf(" data: { %f", node->data[0]);
-    for (unsigned int d = 0; d < node->dim; d += 1)
+    for (unsigned int d = 1; d < node->dim; d += 1)
     {
         printf(", %f", node->data[d]);
     }

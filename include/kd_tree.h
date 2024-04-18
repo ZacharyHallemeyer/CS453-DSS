@@ -36,7 +36,14 @@ void init_kd_tree_node(
 );
 
 
-void insert(struct kd_tree_node** node, struct kd_tree_node** new_node);
+void insert(struct kd_tree** tree, struct kd_tree_node** new_node);
+
+
+void __insert(
+    struct kd_tree_node** node,
+    struct kd_tree_node** new_node,
+    const unsigned int level
+);
 
 
 void print_tree(struct kd_tree_node* node);
