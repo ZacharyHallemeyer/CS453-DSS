@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdlib.h>
 
 
@@ -27,8 +28,8 @@ struct kd_tree_node
 // function prototypes
 void __closest_point(
     struct kd_tree_node** node,
-    const float* data,
-    const unsigned int dim
+    const float* query,
+    float* ret
 );
 
 
@@ -44,8 +45,8 @@ void __free_kd_tree(struct kd_tree_node** node);
 
 void closest_point(
     struct kd_tree** tree,
-    const float* data,
-    const unsigned int dim
+    const float* query,
+    float* ret
 );
 
 

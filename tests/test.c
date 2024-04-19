@@ -41,6 +41,17 @@ int main(int argc, char** argv)
 
     print_tree(tree->root);
 
+    float query[2] = { 0.0, 0.0 };
+    float ret[2];
+    closest_point(&tree, query, ret);
+
+    printf("ret: { % 9.2f");
+    for (unsigned int i = 1; i < DIM; i += 1)
+    {
+        printf(", % 9.2f", ret[i]);
+    }
+    printf(" }\n");
+
     free_kd_tree(&tree);
     
     return 0;

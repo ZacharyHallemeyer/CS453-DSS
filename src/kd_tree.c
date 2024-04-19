@@ -7,9 +7,42 @@
 // function implementation
 void __closest_point(
     struct kd_tree_node** node,
-    const float* data,
-    const unsigned int dim
+    const float* query,
+    float* ret
 ) {
+    if (*node == NULL)
+    {
+        return;
+    }
+
+    float dist = 0.0;
+    float prev_dist = 0.0;
+
+    for (unsigned int i = 0; i < (*node)->dim; i += 1)
+    {
+        dist = (query[i] - (*node)->data[i]) * (query[i] - (*node)->data[i]);
+        prev_dist = (ret[i] - (*node)->data[i]) * (ret[i] - (*node)->data[i]);
+    }
+    dist = sqrt(dist);
+    prev_dist = sqrt(prev_dist);
+
+    if (dist < prev_dist)
+    {
+        for (unsigned int i = 0; i < (*node)->dim; i += 1)
+        {
+            ret[i] = (*node)->data[i];
+        }
+    }
+
+    if (query[(*node)->level % (*node)->dim] < (*node)->metric)
+    {
+        __closest_point(&(*node)->left, query, ret);
+    }
+
+    if (query[(*node)->level % (*node)->dim] > (*node)->metric)
+    {
+        __closest_point(&(*node)->right, query, ret);
+    }
 }
 
 
@@ -57,8 +90,15 @@ void __insert(
 }
 
 
-void closest_point(struct kd_tree** tree, float* data, const unsigned int dim)
-{
+void closest_point(
+    struct kd_tree** tree,
+    const float* query,
+    float* ret
+) {
+    if ((*tree)->root != NULL)
+    {
+        __closest_point(&(*tree)->root, query, ret);
+    }
 }
 
 
