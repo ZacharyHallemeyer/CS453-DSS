@@ -17,4 +17,4 @@ module load cuda/11.7
 nvcc -O3 -arch=compute_80 -code=sm_80 -lcuda -lineinfo -Xcompiler -fopenmp DSS.cu -o DSS
 #run your program
 
-srun ./DSS 7490 135000 1000 10000.0 bee_dataset_1D_feature_vectors.txt
+srun ./DSS 100 2 10.0 xy100.txt

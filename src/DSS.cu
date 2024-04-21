@@ -21,8 +21,11 @@ inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort=t
     }
 }
 
-// Mode 0 is CPU implementation
-// Mode 1 is GPU implementation
+// Mode 0 is CPU brute force - for checking tree results
+// Mode 1 is CPU sequential implementation of kd-tree
+// Mode 2 uses CPU to build the kd-tree and GPU to query
+// Mode 3 ...
+// ...
 #define MODE 0
 
 //Define any constants here
@@ -36,7 +39,9 @@ void warmUpGPU();
 void checkParams(unsigned int N, unsigned int DIM);
 
 // cpu code
-void calcDistMatCPU(float* dataset, unsigned int N, unsigned int DIM);
+// brute force
+void calcDistMatCPU(float* distanceMatrix, const float* dataset, const unsigned int N, const unsigned int DIM);
+void calcQueryDistMat(unsigned int* result, const float* distanceMatrix, const float epsilon, const unsigned int N, const unsigned int DIM);
 
 // gpu code
 
@@ -84,7 +89,9 @@ int main(int argc, char* argv[])
     );
 
 
-    float* dataset = (float*)malloc(sizeof(float*) * N * DIM);
+    float* dataset = (float*)malloc(sizeof(float) * N * DIM);
+    float* distanceMatrix = (float*)malloc(sizeof(float) * N * N);
+    unsigned int* result = (unsigned int*)malloc(sizeof(unsigned int) * N);
     importDataset(inputFname, N, DIM, dataset);
 
 
@@ -92,14 +99,23 @@ int main(int argc, char* argv[])
     //It only computes the distance matrix but does not query the distance matrix
     if (MODE == 0)
     {
-        // TODO: can move once we know more about allocating space on the GPU
-        struct kd_tree* tree = (struct kd_tree*)malloc(sizeof(struct kd_tree));
-        // Calculate with CPU implementation
-        // TODO: IMPLEMENT CPU IMPLEMENTATION
-        calcDistMatCPU(dataset, tree, N, DIM);
-        // TODO: query kd-tree
+        double tstart = omp_get_wtime();
 
-        return(0);
+        calcDistMatCPU(distanceMatrix, dataset, N, DIM);
+        calcQueryDistMat(result, distanceMatrix, N, DIM);
+
+        unsigned int totalWithinEpsilon = 0;
+        for (unsigned int i = 0; i < N; i += 1)
+        {
+            totalWithinEpsilon += result[i];
+        }
+
+        double tend = omp_get_wtime();
+
+        printf("\nTotal number of points within epsilon: %u", totalWithinEpsilon);
+        printf("\n[MODE: %d, N: %d] Total time: %f", MODE, N, tend - tstart);
+
+        return 0;
     }
 
     double tstart=omp_get_wtime();
@@ -113,13 +129,11 @@ int main(int argc, char* argv[])
     float* dev_distanceMatrix;
     gpuErrchk(cudaMalloc((float**)&dev_distanceMatrix, sizeof(float) * N * N));
 
-
     //For part 2 for querying the distance matrix
     unsigned int* resultSet = (unsigned int*)calloc(N, sizeof(unsigned int));
     unsigned int* dev_resultSet;
     gpuErrchk(cudaMalloc((unsigned int**)&dev_resultSet, sizeof(unsigned int) * N));
     gpuErrchk(cudaMemcpy(dev_resultSet, resultSet, sizeof(unsigned int) * N, cudaMemcpyHostToDevice));
-
 
     //Baseline kernels
     if (MODE == 1)
@@ -130,7 +144,6 @@ int main(int argc, char* argv[])
         // Call baseline kernel here
         // TODO: IMPLEMENT GPU IMPLEMENTATION
     }
-
 
     //Copy result set from the GPU
     gpuErrchk(cudaMemcpy(resultSet, dev_resultSet, sizeof(unsigned int) * N, cudaMemcpyDeviceToHost));
@@ -150,10 +163,10 @@ int main(int argc, char* argv[])
 
     printf("\n[MODE: %d, N: %d] Total time: %f", MODE, N, tend-tstart);
 
-
     printf("\n\n");
     return 0;
 }
+
 
 
 void warmUpGPU()
@@ -164,6 +177,7 @@ void warmUpGPU()
 }
 
 
+
 void checkParams(unsigned int N, unsigned int DIM)
 {
     if (N <= 0 || DIM <= 0)
@@ -171,22 +185,6 @@ void checkParams(unsigned int N, unsigned int DIM)
         fprintf(stderr, "\n Invalid parameters: Error, N: %u, DIM: %u", N, DIM);
         fprintf(stderr, "\nReturning");
         exit(0);
-    }
-}
-
-
-
-void calcDistMatCPU(
-        float* dataset,
-        struct kd_tree* tree,  // double pointer?
-        unsigned int N,
-        unsigned int DIM
-) {
-    init_kd_tree(tree, dataset, DIM);
-
-    // loop over points
-    {
-        // add point to tree
     }
 }
 
@@ -241,3 +239,43 @@ void importDataset(
 
     fclose(fp);
 }
+
+
+
+// cpu
+// brute force
+void calcDistMatCPU(float* distanceMatrix, const float* dataset, const unsigned int N, const unsigned int DIM)
+{
+    for (unsigned int i = 0; i < N; i += 1)
+    {
+        for (unsigned int j = 0; j < N; j += 1)
+        {
+            float dist = 0.0;
+
+            for (unsigned int d = 0; d < DIM; d += 1)
+            {
+                dist += (dataset[i * DIM] + d] - dataset[i * DIM + c + 1])
+                    * (dataset[i * DIM + d] - dataset[i * DIM + c + 1]);
+            }
+
+            distanceMatrix[i * N + j] = sqrt(dist);
+        }
+    }
+}
+
+
+void calcQueryDistMat(unsigned int* result, const float* distanceMatrix, const float epsilon, const unsigned int N, const unsigned int DIM)
+{
+    for (unsigned int i = 0; i < N; i += 1)
+    {
+        for (unsigned int j = 0; j < N; j += 1)
+        {
+            if (distanceMatrix[i * N + j] <= epsilon)
+            {
+                result[i] += 1;
+            }
+        }
+    }
+}
+
+// kd-tree
