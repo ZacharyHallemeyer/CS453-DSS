@@ -26,10 +26,11 @@ struct kd_tree_node
 
 
 // function prototypes
-void __closest_point(
+void __points_within_epsilon(
     struct kd_tree_node** node,
     const float* query,
-    float* ret
+    const float epsilon,
+    unsigned int* count
 );
 
 
@@ -43,10 +44,11 @@ void __insert(
 void __free_kd_tree(struct kd_tree_node** node);
 
 
-void closest_point(
+void points_within_epsilon(
     struct kd_tree** tree,
     const float* query,
-    float* ret
+    const float epsilon,
+    unsigned int* count
 );
 
 

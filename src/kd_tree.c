@@ -5,43 +5,52 @@
 
 
 // function implementation
-void __closest_point(
+void __points_within_epsilon(
     struct kd_tree_node** node,
     const float* query,
-    float* ret
+    const float epsilon,
+    unsigned int* count
 ) {
     if (*node == NULL)
     {
         return;
     }
 
+
     float dist = 0.0;
-    float prev_dist = 0.0;
+    struct kd_tree_node** first_node = NULL;
+    struct kd_tree_node** second_node = NULL;
+
+
+    if (query[(*node)->level % (*node)->dim]
+            < (*node)->data[(*node)->level % (*node)->dim])
+    {
+        first_node = &(*node)->left;
+        second_node = &(*node)->right;
+    }
+    else
+    {
+        first_node = &(*node)->right;
+        second_node = &(*node)->left;
+    }
+
+    __points_within_epsilon(first_node, query, epsilon, count);
 
     for (unsigned int i = 0; i < (*node)->dim; i += 1)
     {
-        dist = (query[i] - (*node)->data[i]) * (query[i] - (*node)->data[i]);
-        prev_dist = (ret[i] - (*node)->data[i]) * (ret[i] - (*node)->data[i]);
+        dist += (query[i] - (*node)->data[i])
+                    * (query[i] - (*node)->data[i]);
     }
     dist = sqrt(dist);
-    prev_dist = sqrt(prev_dist);
 
-    if (dist < prev_dist)
+    if ((*node)->data[(*node)->level % (*node)->dim] <= epsilon)
     {
-        for (unsigned int i = 0; i < (*node)->dim; i += 1)
-        {
-            ret[i] = (*node)->data[i];
-        }
+        __points_within_epsilon(second_node, query, epsilon, count);
     }
 
-    if (query[(*node)->level % (*node)->dim] < (*node)->metric)
+    if (dist <= epsilon)
     {
-        __closest_point(&(*node)->left, query, ret);
-    }
-
-    if (query[(*node)->level % (*node)->dim] > (*node)->metric)
-    {
-        __closest_point(&(*node)->right, query, ret);
+        *count += 1;
     }
 }
 
@@ -90,14 +99,15 @@ void __insert(
 }
 
 
-void closest_point(
+void points_within_epsilon(
     struct kd_tree** tree,
     const float* query,
-    float* ret
+    const float epsilon,
+    unsigned int* count
 ) {
     if ((*tree)->root != NULL)
     {
-        __closest_point(&(*tree)->root, query, ret);
+        __points_within_epsilon(&(*tree)->root, query, epsilon, count);
     }
 }
 
