@@ -54,7 +54,6 @@ void __points_within_epsilon(
     }
 }
 
-
 void __free_kd_tree(struct kd_tree_node** node)
 {
     if (*node == NULL)
@@ -198,4 +197,66 @@ void print_tree(struct kd_tree_node* node)
     {
         print_tree(node->right);
     }
+}
+
+
+// ======================= GPU =======================
+
+void query_gpu(
+    kd_tree_node* nodes,
+    const float* query,
+    const float epsilon,
+    const unsigned int numNodes,
+    unsigned int* count
+) {
+  // Init devCount
+  unsigned int* devCount;
+  cudaMalloc(&devCount, sizeof(unsigned int));
+  cudaMemcpy(devCount, count, sizeof(unsigned int), cudaMemcpyHostToDevice);
+
+  int blockSize = 256;
+  int numBlocks = ceil((numNodes*1.0)/blockSize)
+
+  // call kernel
+  __points_within_epsilon_kernel<<<numBlocks, blockSize>>>(nodes, query, epsilon, numNodes, devCount);
+
+  // get devCount
+  cudaMemcpy(count, devCount, sizeof(unsigned int), cudaMemcpyDeviceToHost);
+}
+
+__global__ void __points_within_epsilon_kernel(
+    kd_tree_node* nodes,
+    const float* query,
+    const float epsilon,
+    const unsigned int numNodes,
+    unsigned int* count
+) {
+
+  int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  // Check if tid is more than number of nodes
+  if (tid < numNodes) {
+    kd_tree_node* node = &nodes[tid];
+
+    // Check if node exists
+    if (!node) {
+      return;
+    }
+
+    float dist = 0.0;
+    float* data = node->data;
+    unsigned int dim = node->dim;
+
+    for (unsigned int i = 0; i < dim; i++) {
+        dist += (query[i] - data[i]) * (query[i] - data[i]);
+    }
+
+    dist = sqrt(dist);
+
+    if (dist <= epsilon) {
+        atomicAdd(count, 1);
+    }
+
+
+  }
 }
