@@ -77,6 +77,7 @@ void __free_kd_tree(struct kd_tree_node** node)
 
 
 void __insert(
+    struct kd_tree_node** parent,
     struct kd_tree_node** node,
     struct kd_tree_node** new_node,
     const unsigned int level
@@ -87,14 +88,15 @@ void __insert(
         (*new_node)->level = level + 1;
         (*new_node)->metric =
             (*new_node)->data[(*new_node)->level % (*new_node)->dim];
+        (*new_node)->parent = *parent;
     }
     else if ((*new_node)->data[level % (*new_node)->dim] < (*node)->metric)
     {
-        __insert(&(*node)->left, new_node, (*node)->level);
+        __insert(node, &(*node)->left, new_node, (*node)->level);
     }
     else if ((*new_node)->data[level % (*new_node)->dim] > (*node)->metric)
     {
-        __insert(&(*node)->right, new_node, (*node)->level);
+        __insert(node, &(*node)->right, new_node, (*node)->level);
     }
 }
 
@@ -142,6 +144,7 @@ void init_kd_tree_node(
     (*node)->data = (float*)malloc(sizeof(float) * dim);
     (*node)->left = NULL;
     (*node)->right = NULL;
+    (*node)->parent = NULL;
 
     for (unsigned int d = 0; d < dim; d += 1)
     {
@@ -158,10 +161,11 @@ void insert(struct kd_tree** tree, struct kd_tree_node** new_node)
         (*new_node)->level = 0;
         (*new_node)->metric =
             (*new_node)->data[(*new_node)->level % (*new_node)->dim];
+        (*new_node)->parent = NULL;
     }
     else
     {
-        __insert(&(*tree)->root, new_node, 0);
+        __insert(&(*tree)->root, &(*tree)->root, new_node, 0);
     }
 }
 
@@ -180,11 +184,12 @@ void print_tree(struct kd_tree_node* node)
 
     printf("{");
     printf(
-        " level: %5u, metric: % 9.2f, left: %9d, right: %9d,",
+        " level: %5u, metric: % 9.2f, left: %9d, right: %9d, parent: %9d",
         node->level,
         node->metric,
         node->left,
-        node->right
+        node->right,
+        node->parent
     );
     printf(" data: { % 9.2f", node->data[0]);
     for (unsigned int d = 1; d < node->dim; d += 1)
