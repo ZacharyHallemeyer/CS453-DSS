@@ -22,6 +22,7 @@ struct kd_tree_node
     float* data;
     struct kd_tree_node* left;
     struct kd_tree_node* right;
+    struct kd_tree_node* parent;
 };
 
 
@@ -35,6 +36,7 @@ void __points_within_epsilon(
 
 
 void __insert(
+    struct kd_tree_node** parent,
     struct kd_tree_node** node,
     struct kd_tree_node** new_node,
     const unsigned int level

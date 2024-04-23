@@ -44,7 +44,7 @@ int main(int argc, char** argv)
     float query[2] = { 2.0, 0.0 };
     float epsilon = 3.0;
     unsigned int count = 0;
-    points_within_epsilon(&tree, &query, epsilon, &count);
+    points_within_epsilon(&tree, query, epsilon, &count);
 
     printf("\nfor point: { % 9.2f", query[0]);
     for (unsigned int i = 1; i < DIM; i += 1)
