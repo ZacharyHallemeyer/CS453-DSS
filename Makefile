@@ -3,8 +3,8 @@ INCLUDE=./include
 SRC=./src
 TEST=./tests
 
-all: tree $(SRC)/dss.cu
-	$(CC) kd_tree.o $(SRC)/dss.cu -o $(BIN)
+all: tree $(SRC)/DSS.cu
+	$(CC) kd_tree.o $(SRC)/DSS.cu -o $(BIN)
 
 test: tree $(TEST)/test.c
 	$(CC) kd_tree.o $(TEST)/test.c -o test
