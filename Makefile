@@ -2,9 +2,10 @@ BIN=./dss
 INCLUDE=./include
 SRC=./src
 TEST=./tests
+ARCH=80
 
 all: tree $(SRC)/DSS.cu
-	$(CC) kd_tree.o $(SRC)/DSS.cu -o $(BIN)
+	nvcc -O3 -arch=compute_$(ARCH) -code=sm_$(ARCH) -lcuda -lineinfo -Xcompiler -fopenmp $(SRC)/DSS.cu -o DSS
 
 test: tree $(TEST)/test.c
 	$(CC) kd_tree.o $(TEST)/test.c -o test
