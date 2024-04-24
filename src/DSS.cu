@@ -26,7 +26,7 @@ inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort=t
 // Mode 2 uses CPU to build the kd-tree and GPU to query
 // Mode 3 ...
 // ...
-#define MODE 0
+// #define MODE 0
 
 //Define any constants here
 #define BLOCKSIZE 128
