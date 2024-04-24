@@ -254,7 +254,7 @@ void calcDistMatCPU(float* distanceMatrix, const float* dataset, const unsigned 
 
             for (unsigned int d = 0; d < DIM; d += 1)
             {
-                dist += (dataset[i * DIM] + d] - dataset[i * DIM + d + 1])
+                dist += (dataset[i * DIM + d] - dataset[i * DIM + d + 1])
                     * (dataset[i * DIM + d] - dataset[i * DIM + d + 1]);
             }
 
