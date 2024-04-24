@@ -102,7 +102,7 @@ int main(int argc, char* argv[])
         double tstart = omp_get_wtime();
 
         calcDistMatCPU(distanceMatrix, dataset, N, DIM);
-        calcQueryDistMat(result, distanceMatrix, N, DIM);
+        calcQueryDistMat(result, distanceMatrix, epsilon, N, DIM);
 
         unsigned int totalWithinEpsilon = 0;
         for (unsigned int i = 0; i < N; i += 1)
@@ -254,8 +254,8 @@ void calcDistMatCPU(float* distanceMatrix, const float* dataset, const unsigned 
 
             for (unsigned int d = 0; d < DIM; d += 1)
             {
-                dist += (dataset[i * DIM] + d] - dataset[i * DIM + c + 1])
-                    * (dataset[i * DIM + d] - dataset[i * DIM + c + 1]);
+                dist += (dataset[i * DIM] + d] - dataset[i * DIM + d + 1])
+                    * (dataset[i * DIM + d] - dataset[i * DIM + d + 1]);
             }
 
             distanceMatrix[i * N + j] = sqrt(dist);
