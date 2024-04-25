@@ -6,7 +6,7 @@
 
 // function implementation
 void __points_within_epsilon(
-    struct kd_tree_node** node,
+    struct kd_tree_node_cpu** node,
     const float* query,
     const float epsilon,
     unsigned int* count
@@ -18,8 +18,8 @@ void __points_within_epsilon(
 
 
     float dist = 0.0;
-    struct kd_tree_node** first_node = NULL;
-    struct kd_tree_node** second_node = NULL;
+    struct kd_tree_node_cpu** first_node = NULL;
+    struct kd_tree_node_cpu** second_node = NULL;
 
 
     if (query[(*node)->level % (*node)->dim]
@@ -55,7 +55,7 @@ void __points_within_epsilon(
 }
 
 
-void __free_kd_tree(struct kd_tree_node** node)
+void __free_kd_tree_cpu(struct kd_tree_node_cpu** node)
 {
     if (*node == NULL)
     {
@@ -64,12 +64,12 @@ void __free_kd_tree(struct kd_tree_node** node)
 
     if ((*node)->left != NULL)
     {
-        __free_kd_tree(&(*node)->left);
+        __free_kd_tree_cpu(&(*node)->left);
     }
 
     if ((*node)->right != NULL)
     {
-        __free_kd_tree(&(*node)->right);
+        __free_kd_tree_cpu(&(*node)->right);
     }
 
     free(*node);
@@ -77,9 +77,9 @@ void __free_kd_tree(struct kd_tree_node** node)
 
 
 void __insert(
-    struct kd_tree_node** parent,
-    struct kd_tree_node** node,
-    struct kd_tree_node** new_node,
+    struct kd_tree_node_cpu** parent,
+    struct kd_tree_node_cpu** node,
+    struct kd_tree_node_cpu** new_node,
     const unsigned int level
 ) {
     if (*node == NULL)
@@ -102,7 +102,7 @@ void __insert(
 
 
 void points_within_epsilon(
-    struct kd_tree** tree,
+    struct kd_tree_cpu** tree,
     const float* query,
     const float epsilon,
     unsigned int* count
@@ -114,30 +114,30 @@ void points_within_epsilon(
 }
 
 
-void free_kd_tree(struct kd_tree** tree)
+void free_kd_tree_cpu(struct kd_tree_cpu** tree)
 {
-    __free_kd_tree(&(*tree)->root);
+    __free_kd_tree_cpu(&(*tree)->root);
 
     free(*tree);
 }
 
 
-void init_kd_tree(struct kd_tree** tree)
+void init_kd_tree_cpu(struct kd_tree_cpu** tree)
 {
-    *tree = (struct kd_tree*)malloc(sizeof(struct kd_tree));
+    *tree = (struct kd_tree_cpu*)malloc(sizeof(struct kd_tree_cpu));
 
     (*tree)->height = 0;
     (*tree)->root = NULL;
 }
 
 
-void init_kd_tree_node(
-        struct kd_tree_node** node,
+void init_kd_tree_node_cpu(
+        struct kd_tree_node_cpu** node,
         const float* data,
         const unsigned int dim,
         const unsigned int level
 ) {
-    *node = (struct kd_tree_node*)malloc(sizeof(struct kd_tree_node));
+    *node = (struct kd_tree_node_cpu*)malloc(sizeof(struct kd_tree_node_cpu));
     (*node)->level = level;
     (*node)->metric = 0;
     (*node)->dim = dim;
@@ -153,7 +153,7 @@ void init_kd_tree_node(
 }
 
 
-void insert(struct kd_tree** tree, struct kd_tree_node** new_node)
+void insert(struct kd_tree_cpu** tree, struct kd_tree_node_cpu** new_node)
 {
     if ((*tree)->root == NULL)
     {
@@ -170,7 +170,7 @@ void insert(struct kd_tree** tree, struct kd_tree_node** new_node)
 }
 
 
-void print_tree(struct kd_tree_node* node)
+void print_tree(struct kd_tree_node_cpu* node)
 {
     if (node == NULL)
     {

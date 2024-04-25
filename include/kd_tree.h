@@ -3,14 +3,14 @@
 
 
 // structures
-struct kd_tree
+struct kd_tree_cpu
 {
     // provides an easy way to get the height of the tree
     unsigned int height;
-    struct kd_tree_node* root;
+    struct kd_tree_node_cpu* root;
 };
 
-struct kd_tree_node
+struct kd_tree_node_cpu
 {
     // provides an easy way for nodes to compare dimensions
     unsigned int level;
@@ -20,15 +20,15 @@ struct kd_tree_node
     unsigned int dim;
     // data this node represents
     float* data;
-    struct kd_tree_node* left;
-    struct kd_tree_node* right;
-    struct kd_tree_node* parent;
+    struct kd_tree_node_cpu* left;
+    struct kd_tree_node_cpu* right;
+    struct kd_tree_node_cpu* parent;
 };
 
 
 // function prototypes
 void __points_within_epsilon(
-    struct kd_tree_node** node,
+    struct kd_tree_node_cpu** node,
     const float* query,
     const float epsilon,
     unsigned int* count
@@ -36,39 +36,39 @@ void __points_within_epsilon(
 
 
 void __insert(
-    struct kd_tree_node** parent,
-    struct kd_tree_node** node,
-    struct kd_tree_node** new_node,
+    struct kd_tree_node_cpu** parent,
+    struct kd_tree_node_cpu** node,
+    struct kd_tree_node_cpu** new_node,
     const unsigned int level
 );
 
 
-void __free_kd_tree(struct kd_tree_node** node);
+void __free_kd_tree_cpu(struct kd_tree_node_cpu** node);
 
 
 void points_within_epsilon(
-    struct kd_tree** tree,
+    struct kd_tree_cpu** tree,
     const float* query,
     const float epsilon,
     unsigned int* count
 );
 
 
-void free_kd_tree(struct kd_tree** tree);
+void free_kd_tree_cpu(struct kd_tree_cpu** tree);
 
 
-void init_kd_tree(struct kd_tree** tree);
+void init_kd_tree_cpu(struct kd_tree_cpu** tree);
 
 
-void init_kd_tree_node(
-    struct kd_tree_node** node,
+void init_kd_tree_node_cpu(
+    struct kd_tree_node_cpu** node,
     const float* data,
     const unsigned int dim,
     const unsigned int level
 );
 
 
-void insert(struct kd_tree** tree, struct kd_tree_node** new_node);
+void insert(struct kd_tree_cpu** tree, struct kd_tree_node_cpu** new_node);
 
 
-void print_tree(struct kd_tree_node* node);
+void print_tree(struct kd_tree_node_cpu* node);

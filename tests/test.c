@@ -19,15 +19,15 @@ int main(int argc, char** argv)
 {
     float* dataset = (float*)malloc(sizeof(float) * N * DIM);
 
-    struct kd_tree* tree;
+    struct kd_tree_cpu* tree;
 
     fill_dataset(dataset);
 
-    init_kd_tree(&tree);
+    init_kd_tree_cpu(&tree);
 
     for (unsigned int p = 0; p < N; p += 1)
     {
-        struct kd_tree_node* node;
+        struct kd_tree_node_cpu* node;
         float data[2];
 
         for (unsigned int d = 0; d < DIM; d += 1)
@@ -35,7 +35,7 @@ int main(int argc, char** argv)
             data[d] = dataset[p * DIM + d];
         }
 
-        init_kd_tree_node(&node, data, DIM, 0);
+        init_kd_tree_node_cpu(&node, data, DIM, 0);
         insert(&tree, &node);
     }
 
@@ -54,7 +54,7 @@ int main(int argc, char** argv)
     printf(" }\n");
     printf("The number of points within epsilon = %f is %u\n", epsilon, count);
 
-    free_kd_tree(&tree);
+    free_kd_tree_cpu(&tree);
     
     return 0;
 }
