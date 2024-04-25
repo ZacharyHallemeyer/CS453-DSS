@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
         double tend = omp_get_wtime();
 
         printf("\nTotal number of points within epsilon: %u", totalWithinEpsilon);
-        printf("\n[MODE: %d, N: %d] Total time: %f", MODE, N, tend - tstart);
+        printf("\n[MODE: %d, N: %d] Total time: %f\n", MODE, N, tend - tstart);
 
         return 0;
     }
@@ -161,7 +161,7 @@ int main(int argc, char* argv[])
 
     double tend = omp_get_wtime();
 
-    printf("\n[MODE: %d, N: %d] Total time: %f", MODE, N, tend-tstart);
+    printf("\n[MODE: %d, N: %d] Total time: %f\n", MODE, N, tend-tstart);
 
     printf("\n\n");
     return 0;
