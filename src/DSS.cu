@@ -23,8 +23,9 @@ inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort=t
 
 // Mode 0 is CPU brute force - for checking tree results
 // Mode 1 is CPU sequential implementation of kd-tree
-// Mode 2 uses CPU to build the kd-tree and GPU to query
-// Mode 3 ...
+// Mode 2 brute for query with GPU - for checking and comparing
+// Mode 3 uses CPU to build the kd-tree and GPU to query
+// Mode 4 ...
 // ...
 // #define MODE 0
 
@@ -42,6 +43,10 @@ void checkParams(unsigned int N, unsigned int DIM);
 // brute force
 void calcDistMatCPU(float* distanceMatrix, const float* dataset, const unsigned int N, const unsigned int DIM);
 void calcQueryDistMat(unsigned int* result, const float* distanceMatrix, const float epsilon, const unsigned int N, const unsigned int DIM);
+
+// kd-tree
+struct kd_tree* buildKdTreeCPU(const float* dataset, const unsigned int N, const unsigned int DIM);
+void queryKdTreeCPU(const kd_tree** tree, const unsigned int N);
 
 // gpu code
 
@@ -99,9 +104,10 @@ int main(int argc, char* argv[])
     //It only computes the distance matrix but does not query the distance matrix
     if (MODE == 0)
     {
+        calcDistMatCPU(distanceMatrix, dataset, N, DIM);
+
         double tstart = omp_get_wtime();
 
-        calcDistMatCPU(distanceMatrix, dataset, N, DIM);
         calcQueryDistMat(result, distanceMatrix, epsilon, N, DIM);
 
         unsigned int totalWithinEpsilon = 0;
@@ -135,14 +141,18 @@ int main(int argc, char* argv[])
     gpuErrchk(cudaMalloc((unsigned int**)&dev_resultSet, sizeof(unsigned int) * N));
     gpuErrchk(cudaMemcpy(dev_resultSet, resultSet, sizeof(unsigned int) * N, cudaMemcpyHostToDevice));
 
-    //Baseline kernels
-    if (MODE == 1)
+    if (MODE == 1)  // build and query tree on CPU
+    {
+    }
+    else if (MODE == 2)  // brute force with GPU
     {
         unsigned int BLOCKDIM = BLOCKSIZE;
-        unsigned int NBLOCKS = ceil(N*1.0/BLOCKDIM);
-
-        // Call baseline kernel here
-        // TODO: IMPLEMENT GPU IMPLEMENTATION
+        unsigned int NBLOCKS = ceil(N * 1.0 / BLOCKDIM);
+    }
+    else if (MODE == 3)  // build tree on CPU and query on GPU
+    {
+        unsigned int BLOCKDIM = BLOCKSIZE;
+        unsigned int NBLOCKS = ceil(N * 1.0 / BLOCKDIM);
     }
 
     //Copy result set from the GPU
@@ -279,3 +289,25 @@ void calcQueryDistMat(unsigned int* result, const float* distanceMatrix, const f
 }
 
 // kd-tree
+struct kd_tree* buildKdTreeCPU(const float* dataset, const unsigned int N, const unsigned int DIM)
+{
+    struct kd_tree* tree;
+
+    init_kd_tree(&tree);
+
+    for (unsigned int p = 0; p < N; p += 1)
+    {
+        struct kd_tree_node* node;
+        float data[DIM];
+
+        for (unsigned int d = 0; d < DIM; d += 1)
+        {
+            data[d] = dataset[p * DIM + d];
+        }
+
+        init_kd_tree_node(&node, data, DIM, 0);
+        insert(&tree, &node);
+    }
+
+    return tree;
+}
