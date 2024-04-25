@@ -45,8 +45,8 @@ void calcDistMatCPU(float* distanceMatrix, const float* dataset, const unsigned 
 void calcQueryDistMat(unsigned int* result, const float* distanceMatrix, const float epsilon, const unsigned int N, const unsigned int DIM);
 
 // kd-tree
-struct kd_tree* buildKdTreeCPU(const float* dataset, const unsigned int N, const unsigned int DIM);
-void queryKdTreeCPU(const kd_tree** tree, const unsigned int N);
+struct kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, const unsigned int DIM);
+void queryKdTreeCPU(struct kd_tree_cpu** tree, unsigned int* result, const float* dataset, const float epsilon, const unsigned int N, const unsigned int DIM);
 
 // gpu code
 
@@ -94,6 +94,10 @@ int main(int argc, char* argv[])
     );
 
 
+    double tstartbuild = 0.0;
+    double tendbuild = 0.0;
+    double tstartquery = 0.0;
+    double tendquery = 0.0;
     float* dataset = (float*)malloc(sizeof(float) * N * DIM);
     float* distanceMatrix = (float*)malloc(sizeof(float) * N * N);
     unsigned int* result = (unsigned int*)malloc(sizeof(unsigned int) * N);
@@ -104,11 +108,13 @@ int main(int argc, char* argv[])
     //It only computes the distance matrix but does not query the distance matrix
     if (MODE == 0)
     {
+        double tstartcalc = omp_get_wtime();
         calcDistMatCPU(distanceMatrix, dataset, N, DIM);
+        double tendcalc = omp_get_wtime();
 
-        double tstart = omp_get_wtime();
-
+        double tstartquery = omp_get_wtime();
         calcQueryDistMat(result, distanceMatrix, epsilon, N, DIM);
+        double tendquery = omp_get_wtime();
 
         unsigned int totalWithinEpsilon = 0;
         for (unsigned int i = 0; i < N; i += 1)
@@ -116,10 +122,41 @@ int main(int argc, char* argv[])
             totalWithinEpsilon += result[i];
         }
 
-        double tend = omp_get_wtime();
+        printf("\nTotal number of points within epsilon: %u", totalWithinEpsilon);
+        printf("\nTime to calc the tree: %f\n", tendcalc - tstartcalc);
+        printf("\nTime to query the tree: %f\n", tendquery - tstartquery);
+        printf(
+            "\n[MODE: %d, N: %d] Total time: %f\n",
+            MODE, N,
+            (tendcalc - tstartcalc) + (tendquery - tstartquery)
+        );
+
+        return 0;
+    }
+    else if (MODE == 1)  // build and query kd-tree on CPU
+    {
+        tstartbuild = omp_get_wtime();
+        struct kd_tree_cpu* tree = buildKdTreeCPU(dataset, N, DIM);
+        tendbuild = omp_get_wtime();
+
+        tstartquery = omp_get_wtime();
+        queryKdTreeCPU(&tree, result, dataset, epsilon, N, DIM);
+        tendquery = omp_get_wtime();
+
+        unsigned int totalWithinEpsilon = 0;
+        for (unsigned int i = 0; i < N; i += 1)
+        {
+            totalWithinEpsilon += result[i];
+        }
 
         printf("\nTotal number of points within epsilon: %u", totalWithinEpsilon);
-        printf("\n[MODE: %d, N: %d] Total time: %f\n", MODE, N, tend - tstart);
+        printf("\nTime to build the tree: %f\n", tendbuild - tstartbuild);
+        printf("\nTime to query the tree: %f\n", tendquery - tstartquery);
+        printf(
+            "\n[MODE: %d, N: %d] Total time: %f\n",
+            MODE, N,
+            (tendbuild - tstartbuild) + (tendquery - tstartquery)
+        );
 
         return 0;
     }
@@ -141,10 +178,7 @@ int main(int argc, char* argv[])
     gpuErrchk(cudaMalloc((unsigned int**)&dev_resultSet, sizeof(unsigned int) * N));
     gpuErrchk(cudaMemcpy(dev_resultSet, resultSet, sizeof(unsigned int) * N, cudaMemcpyHostToDevice));
 
-    if (MODE == 1)  // build and query tree on CPU
-    {
-    }
-    else if (MODE == 2)  // brute force with GPU
+    if (MODE == 2)  // brute force with GPU
     {
         unsigned int BLOCKDIM = BLOCKSIZE;
         unsigned int NBLOCKS = ceil(N * 1.0 / BLOCKDIM);
@@ -153,6 +187,10 @@ int main(int argc, char* argv[])
     {
         unsigned int BLOCKDIM = BLOCKSIZE;
         unsigned int NBLOCKS = ceil(N * 1.0 / BLOCKDIM);
+
+        // build tree on CPU
+
+        // move the tree onto the GPU
     }
 
     //Copy result set from the GPU
@@ -171,7 +209,10 @@ int main(int argc, char* argv[])
 
     double tend = omp_get_wtime();
 
-    printf("\n[MODE: %d, N: %d] Total time: %f\n", MODE, N, tend-tstart);
+    printf("\nTime to build the tree: %f\n", tendbuild - tstartbuild);
+    printf("\nTime to query the tree: %f\n", tendquery - tstartquery);
+
+    printf("\n[MODE: %d, N: %d] Total time: %f\n", MODE, N, tend - tstart);
 
     printf("\n\n");
     return 0;
@@ -289,15 +330,15 @@ void calcQueryDistMat(unsigned int* result, const float* distanceMatrix, const f
 }
 
 // kd-tree
-struct kd_tree* buildKdTreeCPU(const float* dataset, const unsigned int N, const unsigned int DIM)
+struct kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, const unsigned int DIM)
 {
-    struct kd_tree* tree;
+    struct kd_tree_cpu* tree;
 
-    init_kd_tree(&tree);
+    init_kd_tree_cpu(&tree);
 
     for (unsigned int p = 0; p < N; p += 1)
     {
-        struct kd_tree_node* node;
+        struct kd_tree_node_cpu* node;
         float data[DIM];
 
         for (unsigned int d = 0; d < DIM; d += 1)
@@ -305,9 +346,29 @@ struct kd_tree* buildKdTreeCPU(const float* dataset, const unsigned int N, const
             data[d] = dataset[p * DIM + d];
         }
 
-        init_kd_tree_node(&node, data, DIM, 0);
+        init_kd_tree_node_cpu(&node, data, DIM, 0);
         insert(&tree, &node);
     }
 
     return tree;
+}
+
+
+void queryKdTreeCPU(struct kd_tree_cpu** tree, unsigned int* result, const float* dataset, const float epsilon, const unsigned int N, const unsigned int DIM)
+{
+    float query[2];
+    unsigned int count;
+    for (unsigned int p = 0; p < N; p += 1)
+    {
+        count = 0;
+
+        for (unsigned int d = 0; d < DIM; d += 1)
+        {
+            query[d] = dataset[p * DIM + d];
+        }
+
+        points_within_epsilon(tree, query, epsilon, &count);
+
+        result[p] = count;
+    }
 }
