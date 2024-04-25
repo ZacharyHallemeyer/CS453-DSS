@@ -25,6 +25,6 @@ do
     for TRIAL in 1 2 3
     do
         echo -e "\n\nTrial = $TRIAL, File = $FILE"
-        srun ./DSS 100 2 10.0 $FILE
+        srun ./DSS 100 2 10000.0 $FILE
     done
 done
