@@ -45,8 +45,8 @@ void calcDistMatCPU(float* distanceMatrix, const float* dataset, const unsigned 
 void calcQueryDistMat(unsigned int* result, const float* distanceMatrix, const float epsilon, const unsigned int N, const unsigned int DIM);
 
 // kd-tree
-struct kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, const unsigned int DIM);
-void queryKdTreeCPU(struct kd_tree_cpu** tree, unsigned int* result, const float* dataset, const float epsilon, const unsigned int N, const unsigned int DIM);
+kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, const unsigned int DIM);
+void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const float* dataset, const float epsilon, const unsigned int N, const unsigned int DIM);
 
 // gpu code
 
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
     else if (MODE == 1)  // build and query kd-tree on CPU
     {
         tstartbuild = omp_get_wtime();
-        struct kd_tree_cpu* tree = buildKdTreeCPU(dataset, N, DIM);
+        kd_tree_cpu* tree = buildKdTreeCPU(dataset, N, DIM);
         tendbuild = omp_get_wtime();
 
         tstartquery = omp_get_wtime();
@@ -330,15 +330,15 @@ void calcQueryDistMat(unsigned int* result, const float* distanceMatrix, const f
 }
 
 // kd-tree
-struct kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, const unsigned int DIM)
+kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, const unsigned int DIM)
 {
-    struct kd_tree_cpu* tree;
+    kd_tree_cpu* tree;
 
     init_kd_tree_cpu(&tree);
 
     for (unsigned int p = 0; p < N; p += 1)
     {
-        struct kd_tree_node_cpu* node;
+        kd_tree_node_cpu* node;
         float data[DIM];
 
         for (unsigned int d = 0; d < DIM; d += 1)
@@ -354,7 +354,7 @@ struct kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, c
 }
 
 
-void queryKdTreeCPU(struct kd_tree_cpu** tree, unsigned int* result, const float* dataset, const float epsilon, const unsigned int N, const unsigned int DIM)
+void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const float* dataset, const float epsilon, const unsigned int N, const unsigned int DIM)
 {
     float query[2];
     unsigned int count;
