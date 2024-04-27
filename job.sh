@@ -23,7 +23,7 @@ DIM=135000
 E=10000.0
 
 module load cuda/11.7
-nvcc -O3 -DMODE=$MODE -arch=compute_$ARCH -code=sm_$ARCH -lcuda -lineinfo -Xcompiler -fopenmp $SRC/kd_tree.cuh $SRC/DSS.cu -o DSS
+nvcc -O3 -DMODE=$MODE -arch=compute_$ARCH -code=sm_$ARCH -lcuda -lineinfo -Xcompiler -fopenmp $SRC/kd_tree.cu $SRC/DSS.cu -o DSS
 
 for TRIAL in 1 2 3
 do
