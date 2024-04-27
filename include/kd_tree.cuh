@@ -6,6 +6,7 @@
 struct kd_tree_cpu
 {
     // provides an easy way to get the height of the tree
+    unsigned int size;
     unsigned int height;
     struct kd_tree_node_cpu* root;
 };
@@ -71,4 +72,7 @@ void init_kd_tree_node_cpu(
 void insert(struct kd_tree_cpu** tree, struct kd_tree_node_cpu** new_node);
 
 
-void print_tree(struct kd_tree_node_cpu* node);
+void print_tree(struct kd_tree_cpu* tree);
+
+
+void __print_tree(struct kd_tree_node_cpu* node);

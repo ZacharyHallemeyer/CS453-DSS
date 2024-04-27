@@ -122,9 +122,9 @@ int main(int argc, char* argv[])
             totalWithinEpsilon += result[i];
         }
 
-        printf("\nTotal number of points within epsilon: %u", totalWithinEpsilon);
-        printf("\nTime to calc the tree: %f\n", tendcalc - tstartcalc);
-        printf("\nTime to query the tree: %f\n", tendquery - tstartquery);
+        printf("\nTotal number of points within epsilon: %u\n", totalWithinEpsilon);
+        printf("\nTime to calc the tree: %f", tendcalc - tstartcalc);
+        printf("\nTime to query the tree: %f", tendquery - tstartquery);
         printf(
             "\n[MODE: %d, N: %d] Total time: %f\n",
             MODE, N,
@@ -139,6 +139,10 @@ int main(int argc, char* argv[])
         kd_tree_cpu* tree = buildKdTreeCPU(dataset, N, DIM);
         tendbuild = omp_get_wtime();
 
+        printf("\n\nkd-tree:");
+        print_tree(tree);
+        printf("\n");
+
         tstartquery = omp_get_wtime();
         queryKdTreeCPU(&tree, result, dataset, epsilon, N, DIM);
         tendquery = omp_get_wtime();
@@ -149,9 +153,9 @@ int main(int argc, char* argv[])
             totalWithinEpsilon += result[i];
         }
 
-        printf("\nTotal number of points within epsilon: %u", totalWithinEpsilon);
-        printf("\nTime to build the tree: %f\n", tendbuild - tstartbuild);
-        printf("\nTime to query the tree: %f\n", tendquery - tstartquery);
+        printf("\nTotal number of points within epsilon: %u\n", totalWithinEpsilon);
+        printf("\nTime to build the tree: %f", tendbuild - tstartbuild);
+        printf("\nTime to query the tree: %f", tendquery - tstartquery);
         printf(
             "\n[MODE: %d, N: %d] Total time: %f\n",
             MODE, N,
