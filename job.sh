@@ -28,5 +28,5 @@ nvcc -O3 -DMODE=$MODE -arch=compute_$ARCH -code=sm_$ARCH -lcuda -lineinfo -Xcomp
 for TRIAL in 1 2 3
 do
     echo -e "\n\nTrial = $TRIAL, File = $FILE"
-    srun ./DSS N DIM E $DATA/$FILE
+    srun ./DSS $N $DIM $E $DATA/$FILE
 done
