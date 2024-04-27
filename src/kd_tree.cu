@@ -5,56 +5,6 @@
 
 
 // function implementation
-void __points_within_epsilon(
-    struct kd_tree_node_cpu** node,
-    const float* query,
-    const float epsilon,
-    unsigned int* count
-) {
-    if (*node == NULL)
-    {
-        return;
-    }
-
-
-    float dist = 0.0;
-    struct kd_tree_node_cpu** first_node = NULL;
-    struct kd_tree_node_cpu** second_node = NULL;
-
-
-    if (query[(*node)->level % (*node)->dim]
-            < (*node)->data[(*node)->level % (*node)->dim])
-    {
-        first_node = &(*node)->left;
-        second_node = &(*node)->right;
-    }
-    else
-    {
-        first_node = &(*node)->right;
-        second_node = &(*node)->left;
-    }
-
-    __points_within_epsilon(first_node, query, epsilon, count);
-
-    for (unsigned int i = 0; i < (*node)->dim; i += 1)
-    {
-        dist += (query[i] - (*node)->data[i])
-                    * (query[i] - (*node)->data[i]);
-    }
-    dist = sqrt(dist);
-
-    if ((*node)->data[(*node)->level % (*node)->dim] <= epsilon)
-    {
-        __points_within_epsilon(second_node, query, epsilon, count);
-    }
-
-    if (dist <= epsilon)
-    {
-        *count += 1;
-    }
-}
-
-
 void __free_kd_tree_cpu(struct kd_tree_node_cpu** node)
 {
     if (*node == NULL)
@@ -97,6 +47,94 @@ void __insert(
     else if ((*new_node)->data[level % (*new_node)->dim] > (*node)->metric)
     {
         __insert(node, &(*node)->right, new_node, (*node)->level);
+    }
+}
+
+
+void __points_within_epsilon(
+    struct kd_tree_node_cpu** node,
+    const float* query,
+    const float epsilon,
+    unsigned int* count
+) {
+    if (*node == NULL)
+    {
+        return;
+    }
+
+
+    float dist = 0.0;
+    struct kd_tree_node_cpu** first_node = NULL;
+    struct kd_tree_node_cpu** second_node = NULL;
+
+
+    if (query[(*node)->level % (*node)->dim]
+            < (*node)->data[(*node)->level % (*node)->dim])
+    {
+        first_node = &(*node)->left;
+        second_node = &(*node)->right;
+    }
+    else
+    {
+        first_node = &(*node)->right;
+        second_node = &(*node)->left;
+    }
+
+    __points_within_epsilon(first_node, query, epsilon, count);
+
+    for (unsigned int i = 0; i < (*node)->dim; i += 1)
+    {
+        dist += (query[i] - (*node)->data[i])
+                    * (query[i] - (*node)->data[i]);
+    }
+    dist = sqrt(dist);
+
+    if (query[(*node)->level % (*node)->dim] <= epsilon)
+    {
+        __points_within_epsilon(second_node, query, epsilon, count);
+    }
+
+    if (dist <= epsilon)
+    {
+        *count += 1;
+    }
+    
+    
+}
+
+
+void __print_tree(struct kd_tree_node_cpu* node)
+{
+    if (node == NULL)
+    {
+        return;
+    }
+
+    if (node->left != NULL)
+    {
+        __print_tree(node->left);
+    }
+
+    printf("{");
+    printf(
+        " level: %5u, metric: % 9.2f, left: %9d, right: %9d, parent: %9d",
+        node->level,
+        node->metric,
+        node->left,
+        node->right,
+        node->parent
+    );
+    printf(" data: { % 9.2f", node->data[0]);
+    for (unsigned int d = 1; d < node->dim; d += 1)
+    {
+        printf(", % 9.2f", node->data[d]);
+    }
+    printf(" }");
+    printf(" },\n");
+
+    if (node->right != NULL)
+    {
+        __print_tree(node->right);
     }
 }
 
@@ -177,40 +215,4 @@ void print_tree(struct kd_tree_cpu* tree)
 {
     printf("\nNodes in tree: %d\n", tree->size);
     __print_tree(tree->root);
-}
-
-
-void __print_tree(struct kd_tree_node_cpu* node)
-{
-    if (node == NULL)
-    {
-        return;
-    }
-
-    if (node->left != NULL)
-    {
-        __print_tree(node->left);
-    }
-
-    printf("{");
-    printf(
-        " level: %5u, metric: % 9.2f, left: %9d, right: %9d, parent: %9d",
-        node->level,
-        node->metric,
-        node->left,
-        node->right,
-        node->parent
-    );
-    printf(" data: { % 9.2f", node->data[0]);
-    for (unsigned int d = 1; d < node->dim; d += 1)
-    {
-        printf(", % 9.2f", node->data[d]);
-    }
-    printf(" }");
-    printf(" },\n");
-
-    if (node->right != NULL)
-    {
-        __print_tree(node->right);
-    }
 }
