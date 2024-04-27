@@ -52,10 +52,10 @@ void __insert(
 
 
 void __points_within_epsilon(
-    struct kd_tree_node_cpu** node,
-    const float* query,
-    const float epsilon,
-    unsigned int* count
+        struct kd_tree_node_cpu** node,
+        const float* query,
+        const float epsilon,
+        unsigned int* count
 ) {
     if (*node == NULL)
     {
@@ -64,9 +64,22 @@ void __points_within_epsilon(
 
 
     float dist = 0.0;
+    float dist_prime = 0.0;
     struct kd_tree_node_cpu** first_node = NULL;
     struct kd_tree_node_cpu** second_node = NULL;
 
+
+    for (unsigned int i = 0; i < (*node)->dim; i += 1)
+    {
+        dist += (query[i] - (*node)->data[i])
+                    * (query[i] - (*node)->data[i]);
+    }
+    dist = sqrt(dist);
+
+    dist_prime = fabsf(
+        query[(*node)->level % (*node)->dim]
+            - (*node)->data[(*node)->level % (*node)->dim]
+    );
 
     if (query[(*node)->level % (*node)->dim]
             < (*node)->data[(*node)->level % (*node)->dim])
@@ -82,14 +95,7 @@ void __points_within_epsilon(
 
     __points_within_epsilon(first_node, query, epsilon, count);
 
-    for (unsigned int i = 0; i < (*node)->dim; i += 1)
-    {
-        dist += (query[i] - (*node)->data[i])
-                    * (query[i] - (*node)->data[i]);
-    }
-    dist = sqrt(dist);
-
-    if (query[(*node)->level % (*node)->dim] <= epsilon)
+    if (dist_prime < epsilon)
     {
         __points_within_epsilon(second_node, query, epsilon, count);
     }
@@ -98,8 +104,6 @@ void __points_within_epsilon(
     {
         *count += 1;
     }
-    
-    
 }
 
 

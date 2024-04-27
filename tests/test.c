@@ -39,20 +39,18 @@ int main(int argc, char** argv)
         insert(&tree, &node);
     }
 
-    print_tree(tree->root);
+    print_tree(tree);
 
-    float query[2] = { 2.0, 0.0 };
-    float epsilon = 3.0;
+    float query[2] = { -13.0, -3.0 };
+    float epsilon = 10.0;
     unsigned int count = 0;
     points_within_epsilon(&tree, query, epsilon, &count);
 
-    printf("\nfor point: { % 9.2f", query[0]);
-    for (unsigned int i = 1; i < DIM; i += 1)
-    {
-        printf(", % 9.2f", query[i]);
-    }
-    printf(" }\n");
-    printf("The number of points within epsilon = %f is %u\n", epsilon, count);
+    printf("\nFor point: { % 9.2f, % 9.2f },", query[0], query[1]);
+    printf(
+        " the number of points within epsilon = %f is %u\n",
+        epsilon, count
+    );
 
     free_kd_tree_cpu(&tree);
     
