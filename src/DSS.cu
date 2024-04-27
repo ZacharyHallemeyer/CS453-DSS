@@ -7,7 +7,7 @@
 #include <complex.h>
 #include <math.h>
 
-#include "../include/kd_tree.h"
+#include "../include/kd_tree.cuh"
 
 
 //Error checking GPU calls

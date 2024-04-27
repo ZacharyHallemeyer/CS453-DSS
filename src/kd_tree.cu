@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../include/kd_tree.h"
+#include "../include/kd_tree.cuh"
 
 
 // function implementation
