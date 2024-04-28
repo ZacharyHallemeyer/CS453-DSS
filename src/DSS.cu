@@ -42,7 +42,7 @@ void checkParams(unsigned int N, unsigned int DIM);
 // cpu code
 // brute force
 void calcDistMatCPU(float* distanceMatrix, const float* dataset, const unsigned int N, const unsigned int DIM);
-void calcQueryDistMat(unsigned int* result, const float* distanceMatrix, const float epsilon, const unsigned int N, const unsigned int DIM);
+void queryDistMat(unsigned int* result, const float* distanceMatrix, const float epsilon, const unsigned int N);
 
 // kd-tree
 kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, const unsigned int DIM);
@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
         double tendcalc = omp_get_wtime();
 
         double tstartquery = omp_get_wtime();
-        calcQueryDistMat(result, distanceMatrix, epsilon, N, DIM);
+        queryDistMat(result, distanceMatrix, epsilon, N);
         double tendquery = omp_get_wtime();
 
         unsigned int totalWithinEpsilon = 0;
@@ -309,8 +309,8 @@ void calcDistMatCPU(float* distanceMatrix, const float* dataset, const unsigned 
 
             for (unsigned int d = 0; d < DIM; d += 1)
             {
-                dist += (dataset[i * DIM + d] - dataset[i * DIM + d + 1])
-                    * (dataset[i * DIM + d] - dataset[i * DIM + d + 1]);
+                dist += (dataset[i * DIM + d] - dataset[j * DIM + d])
+                    * (dataset[i * DIM + d] - dataset[j * DIM + d]);
             }
 
             distanceMatrix[i * N + j] = sqrt(dist);
@@ -319,7 +319,7 @@ void calcDistMatCPU(float* distanceMatrix, const float* dataset, const unsigned 
 }
 
 
-void calcQueryDistMat(unsigned int* result, const float* distanceMatrix, const float epsilon, const unsigned int N, const unsigned int DIM)
+void queryDistMat(unsigned int* result, const float* distanceMatrix, const float epsilon, const unsigned int N)
 {
     for (unsigned int i = 0; i < N; i += 1)
     {
