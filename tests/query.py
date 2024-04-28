@@ -31,11 +31,16 @@ if __name__ == "__main__":
     if args.query:
         count = query(points, args.query, args.epsilon)
         print(
-            f"\nFor point ({args.query[0]}, {args.query[1]}), the number of points"
-            f" within epsilon = {args.epsilon} is {count}"
+            f"\nFor point ({args.query[0]}, {args.query[1]}), the number of"
+            f" points within epsilon ({args.epsilon}) = {count}"
         )
     else:
         count = 0
         for p in points:
-            count += query(points, p, args.epsilon)
-        print(f"\nTotal number of neighbors in epsilon = {count}")
+            res = query(points, p, args.epsilon)
+            print(f"For point ({p[0]}, {p[1]}), the number of points within epsilon ({args.epsilon}) = {res}")
+            count += res
+        print(
+            f"\nTotal number of points within epsilon ({args.epsilon}) = "
+            f"{count}"
+        )

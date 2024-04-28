@@ -40,11 +40,11 @@ void __insert(
             (*new_node)->data[(*new_node)->level % (*new_node)->dim];
         (*new_node)->parent = *parent;
     }
-    else if ((*new_node)->data[level % (*new_node)->dim] < (*node)->metric)
+    else if ((*new_node)->data[(*node)->level % (*new_node)->dim] < (*node)->metric)
     {
         __insert(node, &(*node)->left, new_node, (*node)->level);
     }
-    else if ((*new_node)->data[level % (*new_node)->dim] > (*node)->metric)
+    else if ((*new_node)->data[(*node)->level % (*new_node)->dim] > (*node)->metric)
     {
         __insert(node, &(*node)->right, new_node, (*node)->level);
     }
