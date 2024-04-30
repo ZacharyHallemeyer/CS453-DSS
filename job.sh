@@ -28,14 +28,16 @@ E=10000.0
 
 module load cuda/11.7
 
+
 for MODE in 0 1
 do
     nvcc -O3 -DMODE=$MODE -arch=compute_$ARCH -code=sm_$ARCH -lcuda -lineinfo -Xcompiler -fopenmp $SRC/kd_tree.cu $SRC/DSS.cu -o DSS
+
     for FILE in xy100.csv
     do
         for TRIAL in 1 2 3
         do
-            echo -e "\n\nTrial = $TRIAL, File = $FILE"
+            echo -e "\n\nMode = $MODE, File = $FILE, N = $N, E = $E, Trial = $TRIAL"
             srun ./DSS $N $DIM $E $DATA/$FILE
         done
     done
