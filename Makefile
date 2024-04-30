@@ -5,7 +5,7 @@ TEST=./tests
 ARCH=80
 
 all: $(INCLUDE)/kd_tree.cuh $(SRC)/kd_tree.cu $(SRC)/DSS.cu
-	nvcc -O3 -DMODE=1 -arch=compute_$(ARCH) -code=sm_$(ARCH) -lcuda -lineinfo -Xcompiler -fopenmp $(SRC)/kd_tree.cu $(SRC)/DSS.cu -o $(BIN)
+	nvcc -O3 -DMODE=1 -arch=compute_$(ARCH) -code=sm_$(ARCH) -lcuda -lineinfo -Xcompiler -fopenmp $(SRC)/kd_tree.cu $(SRC)/DSS.cu -o $(BIN) -lm
 
 test: tree $(TEST)/test.c
 	$(CC) kd_tree.o -o test -lm
