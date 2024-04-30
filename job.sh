@@ -22,6 +22,10 @@ N=100
 DIM=2
 E=100.0
 
+N=7490
+DIM=135000
+E=10000.0
+
 module load cuda/11.7
 
 for MODE in 0 1
