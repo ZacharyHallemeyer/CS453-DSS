@@ -13,18 +13,28 @@
 
 SRC=src
 DATA=data
+FILE=bee_dataset_1D_feature_vectors.txt
 
 ARCH=70 # GPU ARCHs: a100: 80, v100: 70
 MODE=0
 
-module load cuda/11.7
-nvcc -O3 -DMODE=$MODE -arch=compute_$ARCH -code=sm_$ARCH -lcuda -lineinfo -Xcompiler -fopenmp $SRC/DSS.cu -o DSS
+N=100
+DIM=2
+E=10000.0
 
-for FILE in $DATA/xy100.csv $DATA/xy10000.csv $DATA/xy1000000.csv
+
+module load cuda/11.7
+
+for MODE in 0 1
 do
-    for TRIAL in 1 2 3
+    nvcc -O3 -DMODE=$MODE -arch=compute_$ARCH -code=sm_$ARCH -lcuda -lineinfo -Xcompiler -fopenmp $SRC/kd_tree.cu $SRC/DSS.cu -o DSS
+
+    for FILE in xy100.csv
     do
-        echo -e "\n\nTrial = $TRIAL, File = $FILE"
-        srun ./DSS 100 2 10000.0 $FILE
+        for TRIAL in 1 2 3
+        do
+            echo -e "\n\nMode = $MODE, File = $FILE, N = $N, E = $E, Trial = $TRIAL"
+            srun ./DSS $N $DIM $E $DATA/$FILE
+        done
     done
 done
