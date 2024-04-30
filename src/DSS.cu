@@ -49,6 +49,8 @@ kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, const un
 void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const float* dataset, const float epsilon, const unsigned int N, const unsigned int DIM);
 
 // gpu code
+__global__ void queryKdTreeGPU(struct kd_tree_node_gpu* gpu_nodes_array);
+
 
 // handling data
 void importDataset(
@@ -195,8 +197,23 @@ int main(int argc, char* argv[])
         unsigned int NBLOCKS = ceil(N * 1.0 / BLOCKDIM);
 
         // build tree on CPU
+        tstartbuild = omp_get_wtime();
+        kd_tree_cpu* tree = buildKdTreeCPU(dataset, N, DIM);
+        tendbuild = omp_get_wtime();
+
+        printf("\nTime to build the tree: %f", tendbuild - tstartbuild);
 
         // move the tree onto the GPU
+        struct kd_tree_node_gpu* gpu_nodes_array;
+	struct kd_tree_node_gpu* dev_gpu_nodes_array;
+        gpu_nodes_array = (struct kd_tree_node_gpu*)malloc(sizeof(struct kd_tree_node_gpu) * N);
+        //gpuErrchk(cudaMalloc((struct kd_tree_node_gpu**)&gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * N));
+	allocate_tree_gpu(&(tree->root), &gpu_nodes_array, 0);
+        gpuErrchk(cudaMalloc((struct kd_tree_node_gpu**)&dev_gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * N));
+        gpuErrchk(cudaMemcpy(dev_gpu_nodes_array, gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * N, cudaMemcpyHostToDevice));
+        
+        queryKdTreeGPU<<<NBLOCKS, BLOCKDIM>>>(dev_gpu_nodes_array);
+	return 0;
     }
 
     //Copy result set from the GPU
@@ -377,4 +394,14 @@ void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const float* datas
 
         result[p] = count;
     }
+}
+
+//===================================================//
+//                       GPU                         //
+//===================================================//
+__global__ void queryKdTreeGPU(struct kd_tree_node_gpu* gpu_nodes_array)
+{
+    //testing/debugging for now
+    gpu_nodes_array[0].level = 69;
+    gpu_nodes_array[0].data[0] = 420;
 }

@@ -91,4 +91,5 @@ struct kd_tree_node_gpu {
 };
 
 
+void allocate_tree_gpu(struct kd_tree_node_cpu** cpu_node, struct kd_tree_node_gpu** gpu_node_array, int insert_index);
 void allocate_gpu_memory(struct kd_tree_node_cpu** cpu_nodes, struct kd_tree_node_gpu** gpu_nodes, int num_nodes);

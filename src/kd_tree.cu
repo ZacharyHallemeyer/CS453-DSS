@@ -225,14 +225,43 @@ void print_tree(struct kd_tree_cpu* tree)
 // ============== GPU
 
 
+void allocate_tree_gpu(struct kd_tree_node_cpu** cpu_node, struct kd_tree_node_gpu** gpu_node_array, int insert_index)
+{
+    // check if current node is not null
+    if((*cpu_node) != NULL)
+    {
+	// allocate gpu node at current index
+        //cudaMalloc((float**)&((*gpu_node_array)[insert_index].data), (*cpu_node)->dim * sizeof(float));
+	(*gpu_node_array)[insert_index].data = (float*)malloc(sizeof(float) * (*cpu_node)->dim);
+        
+	//copy data from current cpu node to gpu node
+        (*gpu_node_array)[insert_index].level = (*cpu_node)->level;
+        (*gpu_node_array)[insert_index].metric = (*cpu_node)->dim;
+        (*gpu_node_array)[insert_index].dim = (*cpu_node)->dim;
+	for(int i = 0; i < (*cpu_node)->dim; i++)
+	{
+            (*gpu_node_array)[insert_index].data[i] = (*cpu_node)->data[i];
+	}
+
+        //cudaMemcpy((*gpu_node_array)[insert_index].data, (*cpu_node)->data, (*gpu_node_array)[insert_index].dim * sizeof(float), cudaMemcpyHostToDevice);
+        
+	//initialize left and right indicies
+        (*gpu_node_array)[insert_index].left_child_index = (2 * insert_index) + 1;
+        (*gpu_node_array)[insert_index].right_child_index = (2 * insert_index) + 2;
+        (*gpu_node_array)[insert_index].parent_index = (insert_index - 1) / 2;
+       
+	//recurse left
+	allocate_tree_gpu(&((*cpu_node)->left), gpu_node_array, (2 * insert_index) + 1);
+
+	//recurse right
+        allocate_tree_gpu(&((*cpu_node)->right), gpu_node_array, (2 * insert_index) + 2);
+	
+    }
+}
+
 void allocate_gpu_memory(struct kd_tree_node_cpu** cpu_nodes, struct kd_tree_node_gpu** gpu_nodes, int num_nodes) {
-
-    printf("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH\n\n\n");
     
-    printf("%f\n", (*cpu_nodes)->metric);
-    
-    return;
-
+  /*
   cudaMalloc((void**)&(*gpu_nodes), num_nodes * sizeof(struct kd_tree_node_gpu));
 
   // Copy each node
@@ -274,5 +303,5 @@ void allocate_gpu_memory(struct kd_tree_node_cpu** cpu_nodes, struct kd_tree_nod
     //cudaMalloc((void**)&(gpu_node.data), gpu_node.dim * sizeof(float));
     //cudaMemcpy(gpu_node.data, cpu_nodes[i]->data, gpu_node.dim * sizeof(float), cudaMemcpyHostToDevice);
     //cudaMemcpy( &((*gpu_nodes)[i]) , &gpu_node, sizeof(struct kd_tree_node_gpu), cudaMemcpyHostToDevice);
-    }
+    }*/
 }
