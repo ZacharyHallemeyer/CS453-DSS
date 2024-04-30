@@ -406,58 +406,37 @@ void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const float* datas
 // kd-tree
 __global__ void queryKdTreeGPU(struct kd_tree_gpu** tree, unsigned int* result, float* dataset, const float epsilon, const unsigned int N, const unsigned int DIM)
 {
-    unsigned int tid = threadIdx.x + (blockIdx.x * blockDim.x);
+    const unsigned int tid = threadIdx.x + (blockIdx.x * blockDim.x);
     float dist = 0.0;
     float dist_prime = 0.0;
     struct kd_tree_node_gpu* working = tree->root;
     struct kd_tree_node_gpu* first = NULL;
     struct kd_tree_node_gpu* second = NULL;
 
-    if (tid > N || tree->root == NULL)
+    
+    if (tid > N)
     {
         return;
     }
 
-    if (query[working->level % DIM] < working->metric)
-    {
-        first = tree->root->left_child_index;
-        second = tree->root->right_child_index;
-    }
-    else
-    {
-        first = tree->root->right_child_index;
-        second = tree->root->left_child_index;
-    }
+    // 1. determine first and second
+    //
+    // 2. if there is(are) child node(s), determine first, if first is not 'visited'
+    //   a2. go to first
+    //   b2. go to step 1
+    //
+    // 3. if there is(are) child node(s), determine second, if second is not `visited`
+    //   a3. go to second
+    //   b3. go to step 1
+    //
+    // 4. calc dist
+    // 5. mark as `visited`
+    //
+    // 6. if there is a parent
+    //   a6. go to parent
+    //   b6. go to step 1
+    // 7. break
 
-    for (unsigned int i = 0; i < DIM; i += 1)
-    {
-        dist += (dataset[tid * DIM + i] - working->data[i])
-                    * (dataset[tid * DIM + i] - working->data[i]);
-    }
-    dist = sqrt(dist);
-
-    dist_prime = fabsf(dataset[working->level % DIM] - working->metric);
-
-    if (dist <= epsilon)
-    {
-        result[tid] += 1;
-    }
-
-    working = first;
-
-    while (working != tree->root)
-    {
-        while (working != NULL)
-        {
-            // calc dist
-
-            // calc dist to metric
-
-            // get first node
-
-            // move working to first
-        }
-    }
-
+    
     return 0;
 }
