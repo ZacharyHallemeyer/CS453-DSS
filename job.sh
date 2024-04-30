@@ -23,6 +23,7 @@ DIM=2
 E=100.0
 
 module load cuda/11.7
+
 for MODE in 0 1
 do
     nvcc -O3 -DMODE=$MODE -arch=compute_$ARCH -code=sm_$ARCH -lcuda -lineinfo -Xcompiler -fopenmp $SRC/kd_tree.cu $SRC/DSS.cu -o DSS
