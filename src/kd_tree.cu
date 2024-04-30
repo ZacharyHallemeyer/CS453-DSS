@@ -65,8 +65,8 @@ void __points_within_epsilon_cpu(
 
     float dist = 0.0;
     float dist_prime = 0.0;
-    struct kd_tree_node_cpu** first_node = NULL;
-    struct kd_tree_node_cpu** second_node = NULL;
+    struct kd_tree_node_cpu** first = NULL;
+    struct kd_tree_node_cpu** second = NULL;
 
 
     for (unsigned int i = 0; i < (*node)->dim; i += 1)
@@ -80,20 +80,20 @@ void __points_within_epsilon_cpu(
 
     if (query[(*node)->level % (*node)->dim] < (*node)->metric)
     {
-        first_node = &(*node)->left;
-        second_node = &(*node)->right;
+        first = &(*node)->left;
+        second = &(*node)->right;
     }
     else
     {
-        first_node = &(*node)->right;
-        second_node = &(*node)->left;
+        first = &(*node)->right;
+        second = &(*node)->left;
     }
 
-    __points_within_epsilon_cpu(first_node, query, epsilon, count);
+    __points_within_epsilon_cpu(first, query, epsilon, count);
 
     if (dist_prime < epsilon)
     {
-        __points_within_epsilon_cpu(second_node, query, epsilon, count);
+        __points_within_epsilon_cpu(second, query, epsilon, count);
     }
 
     if (dist <= epsilon)
