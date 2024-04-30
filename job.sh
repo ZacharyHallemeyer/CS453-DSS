@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=CS453_DSS
 
-#SBATCH --output=/scratch/zmh47/CS453_DSS.out
-#SBATCH --error=/scratch/zmh47/CS453_DSS.err
+#SBATCH --output=/scratch/nauID/CS453_DSS.out
+#SBATCH --error=/scratch/nauID/CS453_DSS.err
 
 #SBATCH --time=01:00:00
 #SBATCH --mem=8192
@@ -20,7 +20,7 @@ MODE=1
 
 N=100
 DIM=2
-E=10000.0
+E=100.0
 
 module load cuda/11.7
 for MODE in 0 1
@@ -31,8 +31,7 @@ do
         for TRIAL in 1 2 3
         do
             echo -e "\n\nTrial = $TRIAL, File = $FILE"
-            #srun ./DSS $N $DIM $E $DATA/$FILE
-	    srun compute-sanitizer --tool=memcheck ./DSS $N $DIM $E $DATA/$FILE
+            srun ./DSS $N $DIM $E $DATA/$FILE
         done
     done
 done
