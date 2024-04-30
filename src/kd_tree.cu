@@ -222,6 +222,42 @@ void print_tree(struct kd_tree_cpu* tree)
 }
 
 
+void __print_tree(struct kd_tree_node_cpu* node)
+{
+    if (node == NULL)
+    {
+        return;
+    }
+
+    if (node->left != NULL)
+    {
+        __print_tree(node->left);
+    }
+
+    printf("{");
+    printf(
+        " level: %5u, metric: % 9.2f, left: %9d, right: %9d, parent: %9d",
+        node->level,
+        node->metric,
+        node->left,
+        node->right,
+        node->parent
+    );
+    printf(" data: { % 9.2f", node->data[0]);
+    for (unsigned int d = 1; d < node->dim; d += 1)
+    {
+        printf(", % 9.2f", node->data[d]);
+    }
+    printf(" }");
+    printf(" },\n");
+
+    if (node->right != NULL)
+    {
+        __print_tree(node->right);
+    }
+}
+
+
 // ============== GPU
 
 
