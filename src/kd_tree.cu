@@ -76,13 +76,9 @@ void __points_within_epsilon(
     }
     dist = sqrt(dist);
 
-    dist_prime = fabsf(
-        query[(*node)->level % (*node)->dim]
-            - (*node)->data[(*node)->level % (*node)->dim]
-    );
+    dist_prime = fabsf(query[(*node)->level % (*node)->dim] - (*node)->metric);
 
-    if (query[(*node)->level % (*node)->dim]
-            < (*node)->data[(*node)->level % (*node)->dim])
+    if (query[(*node)->level % (*node)->dim] < (*node)->metric)  // TODO: changed to using `metric` instead of refetching the dimension
     {
         first_node = &(*node)->left;
         second_node = &(*node)->right;
