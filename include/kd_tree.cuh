@@ -28,9 +28,9 @@ struct kd_tree_node_cpu
 
 
 // function prototypes
-void __points_within_epsilon(
+void __points_within_epsilon_cpu(
     struct kd_tree_node_cpu** node,
-    const float* query,
+    float* query,
     const float epsilon,
     unsigned int* count
 );
@@ -47,9 +47,9 @@ void __insert(
 void __free_kd_tree_cpu(struct kd_tree_node_cpu** node);
 
 
-void points_within_epsilon(
+void points_within_epsilon_cpu(
     struct kd_tree_cpu** tree,
-    const float* query,
+    float* query,
     const float epsilon,
     unsigned int* count
 );
@@ -81,15 +81,43 @@ void __print_tree(struct kd_tree_node_cpu* node);
 
 // ============ GPU
 
-struct kd_tree_node_gpu {
-  unsigned int level;
-  float metric;
-  unsigned int dim;
-  float* data;
-  int left_child_index;
-  int right_child_index;
-  int parent_index;
+struct kd_tree_tree
+{
+    unsigned int size;
+    unsigned int height;
+    struct kd_tree_node_gpu* root;
+};
+
+struct kd_tree_node_gpu
+{
+    unsigned int level;
+    float metric;
+    unsigned int dim;
+    float* data;
+    int left_child_index;
+    int right_child_index;
+    int parent_index;
 };
 
 
-void allocate_gpu_memory(struct kd_tree_node_cpu** cpu_nodes, struct kd_tree_node_gpu** gpu_nodes, int num_nodes);
+void __points_within_epsilon_gpu(
+    struct kd_tree_node_gpu** tree,
+    float* query,
+    const float epsilon,
+    unsigned int* count
+);
+
+
+void allocate_gpu_memory(
+    struct kd_tree_node_cpu** cpu_nodes,
+    struct kd_tree_node_gpu** gpu_nodes,
+    int num_nodes
+);
+
+
+void points_within_epsilon_gpu(
+    struct kd_tree_gpu** tree,
+    float* query,
+    const float epsilon,
+    unsigned int* count
+);
