@@ -41,25 +41,25 @@ void checkParams(unsigned int N, unsigned int DIM);
 
 // cpu code
 // brute force
-void calcDistMatCPU(float* distanceMatrix, const float* dataset, const unsigned int N, const unsigned int DIM);
-void queryDistMat(unsigned int* result, const float* distanceMatrix, const float epsilon, const unsigned int N);
+void calcDistMatCPU(double* distanceMatrix, const double* dataset, const unsigned int N, const unsigned int DIM);
+void queryDistMat(unsigned int* result, const double* distanceMatrix, const double epsilon, const unsigned int N);
 
 // kd-tree
-kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, const unsigned int DIM);
-void queryKdTreeCPU(struct kd_tree_cpu** tree, unsigned int* result, const float* dataset, const float epsilon, const unsigned int N, const unsigned int DIM);
+kd_tree_cpu* buildKdTreeCPU(const double* dataset, const unsigned int N, const unsigned int DIM);
+void queryKdTreeCPU(struct kd_tree_cpu** tree, unsigned int* result, const double* dataset, const double epsilon, const unsigned int N, const unsigned int DIM);
 
 // gpu code
 // brute force?
 
 // kd-tree
-__global__ void queryKdTreeGPU(struct kd_tree_gpu** tree, unsigned int* result, float* dataset, const float epsilon, const unsigned int N, const unsigned int DIM);
+__global__ void queryKdTreeGPU(struct kd_tree_gpu** tree, unsigned int* result, double* dataset, const double epsilon, const unsigned int N, const unsigned int DIM);
 
 // handling data
 void importDataset(
     char* fname,
     unsigned int N,
     unsigned int DIM,
-    float* dataset
+    double* dataset
 );
 
 
@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
     char inputFname[500];
     unsigned int N = 0;
     unsigned int DIM = 0;
-    float epsilon = 0;
+    double epsilon = 0;
 
 
     if (argc != 5)
@@ -90,11 +90,11 @@ int main(int argc, char* argv[])
 
     printf(
         "\nAllocating the following amount of memory for the dataset: %f GiB",
-        (sizeof(float) * N * DIM) / (1024 * 1024 * 1024.0)
+        (sizeof(double) * N * DIM) / (1024 * 1024 * 1024.0)
     );
     printf(
         "\nAllocating the following amount of memory for the distance matrix: %f GiB",
-        (sizeof(float) * N * N) / (1024 * 1024 * 1024.0)
+        (sizeof(double) * N * N) / (1024 * 1024 * 1024.0)
     );
 
 
@@ -102,8 +102,8 @@ int main(int argc, char* argv[])
     double tendbuild = 0.0;
     double tstartquery = 0.0;
     double tendquery = 0.0;
-    float* dataset = (float*)malloc(sizeof(float) * N * DIM);
-    float* distanceMatrix = (float*)malloc(sizeof(float) * N * N);
+    double* dataset = (double*)malloc(sizeof(double) * N * DIM);
+    double* distanceMatrix = (double*)malloc(sizeof(double) * N * N);
     unsigned int* result = (unsigned int*)malloc(sizeof(unsigned int) * N);
     importDataset(inputFname, N, DIM, dataset);
 
@@ -172,13 +172,13 @@ int main(int argc, char* argv[])
     double tstart=omp_get_wtime();
 
     //Allocate memory for the dataset
-    float* dev_dataset;
-    gpuErrchk(cudaMalloc((float**)&dev_dataset, sizeof(float) * N * DIM));
-    gpuErrchk(cudaMemcpy(dev_dataset, dataset, sizeof(float) * N * DIM, cudaMemcpyHostToDevice));
+    double* dev_dataset;
+    gpuErrchk(cudaMalloc((double**)&dev_dataset, sizeof(double) * N * DIM));
+    gpuErrchk(cudaMemcpy(dev_dataset, dataset, sizeof(double) * N * DIM, cudaMemcpyHostToDevice));
 
     //For part 1 that computes the distance matrix
-    float* dev_distanceMatrix;
-    gpuErrchk(cudaMalloc((float**)&dev_distanceMatrix, sizeof(float) * N * N));
+    double* dev_distanceMatrix;
+    gpuErrchk(cudaMalloc((double**)&dev_distanceMatrix, sizeof(double) * N * N));
 
     //For part 2 for querying the distance matrix
     unsigned int* resultSet = (unsigned int*)calloc(N, sizeof(unsigned int));
@@ -268,7 +268,7 @@ void importDataset(
         char* fname,
         unsigned int N,
         unsigned int DIM,
-        float* dataset
+        double* dataset
 ) {
     FILE *fp = fopen(fname, "r");
 
@@ -318,13 +318,13 @@ void importDataset(
 
 // cpu
 // brute force
-void calcDistMatCPU(float* distanceMatrix, const float* dataset, const unsigned int N, const unsigned int DIM)
+void calcDistMatCPU(double* distanceMatrix, const double* dataset, const unsigned int N, const unsigned int DIM)
 {
     for (unsigned int i = 0; i < N; i += 1)
     {
         for (unsigned int j = 0; j < N; j += 1)
         {
-            float dist = 0.0;
+            double dist = 0.0;
 
             for (unsigned int d = 0; d < DIM; d += 1)
             {
@@ -338,7 +338,7 @@ void calcDistMatCPU(float* distanceMatrix, const float* dataset, const unsigned 
 }
 
 
-void queryDistMat(unsigned int* result, const float* distanceMatrix, const float epsilon, const unsigned int N)
+void queryDistMat(unsigned int* result, const double* distanceMatrix, const double epsilon, const unsigned int N)
 {
     for (unsigned int i = 0; i < N; i += 1)
     {
@@ -354,7 +354,7 @@ void queryDistMat(unsigned int* result, const float* distanceMatrix, const float
 
 
 // kd-tree
-kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, const unsigned int DIM)
+kd_tree_cpu* buildKdTreeCPU(const double* dataset, const unsigned int N, const unsigned int DIM)
 {
     kd_tree_cpu* tree;
 
@@ -363,7 +363,7 @@ kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, const un
     for (unsigned int p = 0; p < N; p += 1)
     {
         kd_tree_node_cpu* node;
-        float data[DIM];
+        double data[DIM];
 
         for (unsigned int d = 0; d < DIM; d += 1)
         {
@@ -378,9 +378,9 @@ kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, const un
 }
 
 
-void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const float* dataset, const float epsilon, const unsigned int N, const unsigned int DIM)
+void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const double* dataset, const double epsilon, const unsigned int N, const unsigned int DIM)
 {
-    float query[2];
+    double query[2];
     unsigned int count;
     for (unsigned int p = 0; p < N; p += 1)
     {
@@ -404,11 +404,11 @@ void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const float* datas
 
 
 // kd-tree
-__global__ void queryKdTreeGPU(struct kd_tree_gpu** tree, unsigned int* result, float* dataset, const float epsilon, const unsigned int N, const unsigned int DIM)
+__global__ void queryKdTreeGPU(struct kd_tree_gpu** tree, unsigned int* result, double* dataset, const double epsilon, const unsigned int N, const unsigned int DIM)
 {
     const unsigned int tid = threadIdx.x + (blockIdx.x * blockDim.x);
-    float dist = 0.0;
-    float dist_prime = 0.0;
+    double dist = 0.0;
+    double dist_prime = 0.0;
     struct kd_tree_node_gpu* working = tree->root;
     struct kd_tree_node_gpu* first = NULL;
     struct kd_tree_node_gpu* second = NULL;
@@ -418,24 +418,38 @@ __global__ void queryKdTreeGPU(struct kd_tree_gpu** tree, unsigned int* result, 
     {
         return;
     }
+    
+    // 1. choose first
 
-    // 1. determine first and second
-    //
-    // 2. if there is(are) child node(s), determine first, if first is not 'visited'
-    //   a2. go to first
-    //   b2. go to step 1
-    //
-    // 3. if there is(are) child node(s), determine second, if second is not `visited`
-    //   a3. go to second
-    //   b3. go to step 1
-    //
-    // 4. calc dist
-    // 5. mark as `visited`
-    //
-    // 6. if there is a parent
-    //   a6. go to parent
-    //   b6. go to step 1
-    // 7. break
+    // loop - inf loop
+    {
+        // 1. determine first and second
+        
+        // 2. if there is(are) child node(s), determine first, if first is not 'visited'
+        {
+            // a2. go to first
+            // b2. go to step 1 - maybe not necessary if coming from bottom
+        }
+        
+        // 3. if there is(are) child node(s), determine second, if second is not `visited`
+        {
+            // a3. go to second
+            // b3. go to step 1
+        }
+
+        // 4. calc dist
+        // 5. mark as `visited`
+
+        // 6. if there is a parent
+        {
+            // a6. go to parent
+            // b6. go to step 1
+        }
+        // 7. otherwise, assume tree has been queried
+        {
+            // a7. break
+        }
+    }
 
     
     return 0;

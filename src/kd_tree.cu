@@ -29,32 +29,31 @@ void __free_kd_tree_cpu(struct kd_tree_node_cpu** node)
 void __insert(
     struct kd_tree_node_cpu** parent,
     struct kd_tree_node_cpu** node,
-    struct kd_tree_node_cpu** new_node,
-    const unsigned int level
+    struct kd_tree_node_cpu** new_node
 ) {
     if (*node == NULL)
     {
         *node = *new_node;
-        (*new_node)->level = level + 1;
+        (*new_node)->level = (*parent)->level + 1;
         (*new_node)->metric =
             (*new_node)->data[(*new_node)->level % (*new_node)->dim];
         (*new_node)->parent = *parent;
     }
     else if ((*new_node)->data[(*node)->level % (*new_node)->dim] < (*node)->metric)
     {
-        __insert(node, &(*node)->left, new_node, (*node)->level);
+        __insert(node, &(*node)->left, new_node);
     }
     else if ((*new_node)->data[(*node)->level % (*new_node)->dim] > (*node)->metric)
     {
-        __insert(node, &(*node)->right, new_node, (*node)->level);
+        __insert(node, &(*node)->right, new_node);
     }
 }
 
 
 void __points_within_epsilon_cpu(
         struct kd_tree_node_cpu** node,
-        float* query,
-        const float epsilon,
+        double* query,
+        const double epsilon,
         unsigned int* count
 ) {
     if (*node == NULL)
@@ -63,8 +62,8 @@ void __points_within_epsilon_cpu(
     }
 
 
-    float dist = 0.0;
-    float dist_prime = 0.0;
+    double dist = 0.0;
+    double dist_prime = 0.0;
     struct kd_tree_node_cpu** first = NULL;
     struct kd_tree_node_cpu** second = NULL;
 
@@ -141,8 +140,8 @@ void __print_tree(struct kd_tree_node_cpu* node)
 
 void points_within_epsilon_cpu(
     struct kd_tree_cpu** tree,
-    float* query,
-    const float epsilon,
+    double* query,
+    const double epsilon,
     unsigned int* count
 ) {
     if ((*tree)->root != NULL)
@@ -172,7 +171,7 @@ void init_kd_tree_cpu(struct kd_tree_cpu** tree)
 
 void init_kd_tree_node_cpu(
         struct kd_tree_node_cpu** node,
-        const float* data,
+        const double* data,
         const unsigned int dim,
         const unsigned int level
 ) {
@@ -180,7 +179,7 @@ void init_kd_tree_node_cpu(
     (*node)->level = level;
     (*node)->metric = 0;
     (*node)->dim = dim;
-    (*node)->data = (float*)malloc(sizeof(float) * dim);
+    (*node)->data = (double*)malloc(sizeof(double) * dim);
     (*node)->left = NULL;
     (*node)->right = NULL;
     (*node)->parent = NULL;
@@ -205,7 +204,7 @@ void insert(struct kd_tree_cpu** tree, struct kd_tree_node_cpu** new_node)
     }
     else
     {
-        __insert(&(*tree)->root, &(*tree)->root, new_node, 0);
+        __insert(&(*tree)->root, &(*tree)->root, new_node);
         (*tree)->size += 1;
     }
 }
@@ -257,8 +256,8 @@ void __print_tree(struct kd_tree_node_cpu* node)
 // ============== GPU
 void __points_within_epsilon_gpu(
         struct kd_tree_node_gpu** tree,
-        float* query,
-        const float epsilon,
+        double* query,
+        const double epsilon,
         unsigned int* count
 ) {
 }
@@ -310,8 +309,8 @@ void allocate_gpu_memory(struct kd_tree_node_cpu** cpu_nodes, struct kd_tree_nod
     }
 
 
-    //cudaMalloc((void**)&(gpu_node.data), gpu_node.dim * sizeof(float));
-    //cudaMemcpy(gpu_node.data, cpu_nodes[i]->data, gpu_node.dim * sizeof(float), cudaMemcpyHostToDevice);
+    //cudaMalloc((void**)&(gpu_node.data), gpu_node.dim * sizeof(double));
+    //cudaMemcpy(gpu_node.data, cpu_nodes[i]->data, gpu_node.dim * sizeof(double), cudaMemcpyHostToDevice);
     //cudaMemcpy( &((*gpu_nodes)[i]) , &gpu_node, sizeof(struct kd_tree_node_gpu), cudaMemcpyHostToDevice);
     }
 }
@@ -319,8 +318,8 @@ void allocate_gpu_memory(struct kd_tree_node_cpu** cpu_nodes, struct kd_tree_nod
 
 void points_within_epsilon_cpu(
         struct kd_tree_gpu** tree,
-        float* query,
-        const float epsilon,
+        double* query,
+        const double epsilon,
         unsigned int* count
 ) {
 }

@@ -16,11 +16,11 @@ struct kd_tree_node_cpu
     // provides an easy way for nodes to compare dimensions
     unsigned int level;
     // the dimension along which to split the space
-    float metric;
+    double metric;
     // dimensions of the point
     unsigned int dim;
     // data this node represents
-    float* data;
+    double* data;
     struct kd_tree_node_cpu* left;
     struct kd_tree_node_cpu* right;
     struct kd_tree_node_cpu* parent;
@@ -30,8 +30,8 @@ struct kd_tree_node_cpu
 // function prototypes
 void __points_within_epsilon_cpu(
     struct kd_tree_node_cpu** node,
-    float* query,
-    const float epsilon,
+    double* query,
+    const double epsilon,
     unsigned int* count
 );
 
@@ -49,8 +49,8 @@ void __free_kd_tree_cpu(struct kd_tree_node_cpu** node);
 
 void points_within_epsilon_cpu(
     struct kd_tree_cpu** tree,
-    float* query,
-    const float epsilon,
+    double* query,
+    const double epsilon,
     unsigned int* count
 );
 
@@ -63,9 +63,8 @@ void init_kd_tree_cpu(struct kd_tree_cpu** tree);
 
 void init_kd_tree_node_cpu(
     struct kd_tree_node_cpu** node,
-    const float* data,
-    const unsigned int dim,
-    const unsigned int level
+    const double* data,
+    const unsigned int dim
 );
 
 
@@ -91,19 +90,19 @@ struct kd_tree_tree
 struct kd_tree_node_gpu
 {
     unsigned int level;
-    float metric;
+    double metric;
     unsigned int dim;
-    float* data;
-    int left_child_index;
-    int right_child_index;
-    int parent_index;
+    double* data;
+    unsigned int left_child_index;
+    unsigned int right_child_index;
+    unsigned int parent_index;
 };
 
 
 void __points_within_epsilon_gpu(
     struct kd_tree_node_gpu** tree,
-    float* query,
-    const float epsilon,
+    double* query,
+    const double epsilon,
     unsigned int* count
 );
 
@@ -117,7 +116,7 @@ void allocate_gpu_memory(
 
 void points_within_epsilon_gpu(
     struct kd_tree_gpu** tree,
-    float* query,
-    const float epsilon,
+    double* query,
+    const double epsilon,
     unsigned int* count
 );
