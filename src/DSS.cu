@@ -74,7 +74,6 @@ __global__ void queryKdTreeGPU(
     unsigned int* result,
     double* dataset,
     const double epsilon,
-    unsigned int* count,
     const unsigned int N,
     const unsigned int DIM
 );
@@ -434,7 +433,6 @@ __global__ void queryKdTreeGPU(
         unsigned int* result,
         double* dataset,
         const double epsilon,
-        unsigned int* count,
         const unsigned int N,
         const unsigned int DIM
 ) {
@@ -503,7 +501,7 @@ __global__ void queryKdTreeGPU(
         // determine if point is within epsilon
         if (dist <= epsilon)
         {
-            *count += 1;
+            result[tid] += 1;
         }
         // 5. mark as `visited`
         working->visited = 1;
