@@ -254,15 +254,6 @@ void __print_tree(struct kd_tree_node_cpu* node)
 
 
 // ============== GPU
-void __points_within_epsilon_gpu(
-        struct kd_tree_node_gpu** tree,
-        double* query,
-        const double epsilon,
-        unsigned int* count
-) {
-}
-
-
 void allocate_gpu_memory(struct kd_tree_node_cpu** cpu_nodes, struct kd_tree_node_gpu** gpu_nodes, int num_nodes) {
 
     printf("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH\n\n\n");
@@ -313,13 +304,4 @@ void allocate_gpu_memory(struct kd_tree_node_cpu** cpu_nodes, struct kd_tree_nod
     //cudaMemcpy(gpu_node.data, cpu_nodes[i]->data, gpu_node.dim * sizeof(double), cudaMemcpyHostToDevice);
     //cudaMemcpy( &((*gpu_nodes)[i]) , &gpu_node, sizeof(struct kd_tree_node_gpu), cudaMemcpyHostToDevice);
     }
-}
-
-
-void points_within_epsilon_cpu(
-        struct kd_tree_gpu** tree,
-        double* query,
-        const double epsilon,
-        unsigned int* count
-) {
 }

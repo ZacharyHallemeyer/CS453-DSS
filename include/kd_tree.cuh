@@ -93,6 +93,7 @@ struct kd_tree_node_gpu
     double metric;
     unsigned int dim;
     double* data;
+    unsigned int visited;
     unsigned int left_child_index;
     unsigned int right_child_index;
     unsigned int parent_index;
