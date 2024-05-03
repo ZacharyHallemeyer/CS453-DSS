@@ -41,18 +41,43 @@ void checkParams(unsigned int N, unsigned int DIM);
 
 // cpu code
 // brute force
-void calcDistMatCPU(double* distanceMatrix, const double* dataset, const unsigned int N, const unsigned int DIM);
-void queryDistMat(unsigned int* result, const double* distanceMatrix, const double epsilon, const unsigned int N);
+void calcDistMatCPU(
+    double* distanceMatrix,
+    const double* dataset,
+    const unsigned int N,
+    const unsigned int DIM
+);
+void queryDistMat(
+    unsigned int* result,
+    const double* distanceMatrix,
+    const double epsilon,
+    const unsigned int N
+);
 
 // kd-tree
 kd_tree_cpu* buildKdTreeCPU(const double* dataset, const unsigned int N, const unsigned int DIM);
-void queryKdTreeCPU(struct kd_tree_cpu** tree, unsigned int* result, const double* dataset, const double epsilon, const unsigned int N, const unsigned int DIM);
+void queryKdTreeCPU(
+    struct kd_tree_cpu** tree,
+    unsigned int* result,
+    const double* dataset,
+    const double epsilon,
+    const unsigned int N,
+    const unsigned int DIM
+);
 
 // gpu code
 // brute force?
 
 // kd-tree
-__global__ void queryKdTreeGPU(struct kd_tree_gpu** tree, unsigned int* result, double* dataset, const double epsilon, const unsigned int N, const unsigned int DIM);
+__global__ void queryKdTreeGPU(
+    struct kd_tree_gpu** tree,
+    unsigned int* result,
+    double* dataset,
+    const double epsilon,
+    unsigned int* count,
+    const unsigned int N,
+    const unsigned int DIM
+);
 
 // handling data
 void importDataset(
@@ -404,8 +429,15 @@ void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const double* data
 
 
 // kd-tree
-__global__ void queryKdTreeGPU(struct kd_tree_gpu** tree, unsigned int* result, double* dataset, const double epsilon, const unsigned int N, const unsigned int DIM)
-{
+__global__ void queryKdTreeGPU(
+        struct kd_tree_gpu** tree,
+        unsigned int* result,
+        double* dataset,
+        const double epsilon,
+        unsigned int* count,
+        const unsigned int N,
+        const unsigned int DIM
+) {
     const unsigned int tid = threadIdx.x + (blockIdx.x * blockDim.x);
     double dist = 0.0;
     double dist_prime = 0.0;
@@ -419,35 +451,75 @@ __global__ void queryKdTreeGPU(struct kd_tree_gpu** tree, unsigned int* result, 
         return;
     }
     
-    // 1. choose first
-
-    // loop - inf loop
+    if (query[(*working)->level % (*working)->dim] < (*working)->metric)
     {
+        working = &(*working)->left;
+    }
+    else
+    {
+        working = &(*working)->right;
+    }
+
+    while (1)
+    {
+        determine_first:
         // 1. determine first and second
-        
-        // 2. if there is(are) child node(s), determine first, if first is not 'visited'
+        if (query[(*working)->level % (*working)->dim] < (*working)->metric)
         {
-            // a2. go to first
-            // b2. go to step 1 - maybe not necessary if coming from bottom
+            first = &(*working)->left;
+            second = &(*working)->right;
+        }
+        else
+        {
+            first = &(*working)->right;
+            second = &(*working)->left;
         }
         
-        // 3. if there is(are) child node(s), determine second, if second is not `visited`
+        // 2. if there is(are) child node(s), determine first, if first is not 'visited'
+        if (first != NULL && !first->visited)
+        {
+            // a2. go to first
+            working = first;
+        }
+
+        dist_prime = fabsf(query[(*working)->level % (*working)->dim] - (*working)->metric);
+        
+        // 3. if there is(are) child node(s), determine second, if second is not `visited` - otherwise?
+        if (second != NULL && !second->visited && dist_prime < epsilon)
         {
             // a3. go to second
+            working = second;
             // b3. go to step 1
+            goto determine_first;
         }
 
         // 4. calc dist
+        for (unsigned int i = 0; i < (*node)->dim; i += 1)
+        {
+            dist += (query[i] - (*node)->data[i])
+                        * (query[i] - (*node)->data[i]);
+        }
+        dist = sqrt(dist);
+        // determine if point is within epsilon
+        if (dist <= epsilon)
+        {
+            *count += 1;
+        }
         // 5. mark as `visited`
+        working->visited = 1;
 
         // 6. if there is a parent
+        if (working->parent != NULL)
         {
             // a6. go to parent
+            working = working->parent;
             // b6. go to step 1
         }
         // 7. otherwise, assume tree has been queried
+        else
         {
             // a7. break
+            break;
         }
     }
 
