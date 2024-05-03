@@ -79,7 +79,6 @@ void __print_tree(struct kd_tree_node_cpu* node);
 
 
 // ============ GPU
-
 struct kd_tree_tree
 {
     unsigned int size;

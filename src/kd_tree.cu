@@ -67,7 +67,6 @@ void __points_within_epsilon_cpu(
     struct kd_tree_node_cpu** first = NULL;
     struct kd_tree_node_cpu** second = NULL;
 
-
     for (unsigned int i = 0; i < (*node)->dim; i += 1)
     {
         dist += (query[i] - (*node)->data[i])
