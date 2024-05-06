@@ -216,51 +216,66 @@ void print_tree(struct kd_tree_cpu* tree)
 }
 
 
-void __print_tree(struct kd_tree_node_cpu* node)
+// ============== GPU
+void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, int dim)
 {
-    if (node == NULL)
-    {
-        return;
-    }
+    (*gpu_node).data = (float*)calloc(dim, sizeof(float));
+    (*gpu_node).level = 0;
+    (*gpu_node).metric = 0;
+    (*gpu_node).dim = dim;
+    (*gpu_node).left_child_index = -1;
+    (*gpu_node).right_child_index = -1;
+    (*gpu_node).parent_index = -1;
 
-    if (node->left != NULL)
-    {
-        __print_tree(node->left);
-    }
+}
 
-    printf("{");
-    printf(
-        " level: %5u, metric: % 9.2f, left: %9d, right: %9d, parent: %9d",
-        node->level,
-        node->metric,
-        node->left,
-        node->right,
-        node->parent
-    );
-    printf(" data: { % 9.2f", node->data[0]);
-    for (unsigned int d = 1; d < node->dim; d += 1)
+void convert_tree_to_array(struct kd_tree_node_cpu** cpu_node, struct kd_tree_node_gpu** gpu_node_array, int insert_index, 
+		           int* max_size, int* index_array, int* index_array_insert)
+{
+    // check if current node is not null
+    if((*cpu_node) != NULL)
     {
-        printf(", % 9.2f", node->data[d]);
-    }
-    printf(" }");
-    printf(" },\n");
+	index_array[*index_array_insert] = insert_index;
+	*index_array_insert += 1;
+        if(insert_index > *max_size)
+	{
+            *max_size = insert_index;
+	}
+	// allocate gpu node at current index
+        //cudaMalloc((float**)&((*gpu_node_array)[insert_index].data), (*cpu_node)->dim * sizeof(float));
+	(*gpu_node_array)[insert_index].data = (float*)malloc(sizeof(float) * (*cpu_node)->dim);
+        
+	//copy data from current cpu node to gpu node
+        (*gpu_node_array)[insert_index].level = (*cpu_node)->level;
+        (*gpu_node_array)[insert_index].metric = (*cpu_node)->metric;
+        (*gpu_node_array)[insert_index].dim = (*cpu_node)->dim;
+  for(int i = 0; i < (*cpu_node)->dim; i++)
+	{
+            (*gpu_node_array)[insert_index].data[i] = (*cpu_node)->data[i];
+	}
 
-    if (node->right != NULL)
-    {
-        __print_tree(node->right);
+        //cudaMemcpy((*gpu_node_array)[insert_index].data, (*cpu_node)->data, (*gpu_node_array)[insert_index].dim * sizeof(float), cudaMemcpyHostToDevice);
+        
+	//initialize left and right indicies
+        (*gpu_node_array)[insert_index].left_child_index = (2 * insert_index) + 1;
+        (*gpu_node_array)[insert_index].right_child_index = (2 * insert_index) + 2;
+        (*gpu_node_array)[insert_index].parent_index = (insert_index - 1) / 2;
+        //printf("INSERT INDEX: %d; current level: %d\n", insert_index,
+               //(*gpu_node_array)[insert_index].level);
+	//printf("INSERT INDEX: %d; current child indicies: %d, %d\n", insert_index,
+               //(*gpu_node_array)[insert_index].left_child_index, (*gpu_node_array)[insert_index].right_child_index);
+	//recurse left
+	convert_tree_to_array(&((*cpu_node)->left), gpu_node_array, (2 * insert_index) + 1, max_size, index_array, index_array_insert);
+
+	//recurse right
+        convert_tree_to_array(&((*cpu_node)->right), gpu_node_array, (2 * insert_index) + 2, max_size, index_array, index_array_insert);
+	
     }
 }
 
-
-// ============== GPU
 void allocate_gpu_memory(struct kd_tree_node_cpu** cpu_nodes, struct kd_tree_node_gpu** gpu_nodes, int num_nodes) {
-
-    printf("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH\n\n\n");
     
-    printf("%f\n", (*cpu_nodes)->metric);
-    
-    return;
-
+  /*
   cudaMalloc((void**)&(*gpu_nodes), num_nodes * sizeof(struct kd_tree_node_gpu));
 
   // Copy each node
@@ -302,5 +317,5 @@ void allocate_gpu_memory(struct kd_tree_node_cpu** cpu_nodes, struct kd_tree_nod
     //cudaMalloc((void**)&(gpu_node.data), gpu_node.dim * sizeof(double));
     //cudaMemcpy(gpu_node.data, cpu_nodes[i]->data, gpu_node.dim * sizeof(double), cudaMemcpyHostToDevice);
     //cudaMemcpy( &((*gpu_nodes)[i]) , &gpu_node, sizeof(struct kd_tree_node_gpu), cudaMemcpyHostToDevice);
-    }
+  }*/
 }
