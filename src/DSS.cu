@@ -45,13 +45,13 @@ void checkParams(unsigned int N, unsigned int DIM);
 // brute force
 void calcDistMatCPU(
     double* distanceMatrix,
-    const double* dataset,
+    double* dataset,
     const unsigned int N,
     const unsigned int DIM
 );
 void queryDistMat(
     unsigned int* result,
-    const double* distanceMatrix,
+    double* distanceMatrix,
     const double epsilon,
     const unsigned int N
 );
@@ -69,6 +69,21 @@ void queryKdTreeCPU(
 
 // gpu code
 // brute force?
+__global__ void calcDistMatGPU(
+    double* distanceMatrix,
+    double* dataset,
+    const unsigned int N,
+    const unsigned int DIM
+);
+
+
+__global__ void queryDistMatGPU(
+    unsigned int* result,
+    double* distanceMatrix,
+    const double epsilon,
+    const unsigned int N
+);
+
 
 // query kd-tree
 __global__ void queryKdTreeGPU(
@@ -229,9 +244,13 @@ int main(int argc, char* argv[])
         unsigned int BLOCKDIM = BLOCKSIZE;
         unsigned int NBLOCKS = ceil(N*1.0 / BLOCKDIM*1.0);
 
-        // calculate distance matrix
+        tstartbuild = omp_get_wtime();
+        calcDistMatGPU<<<NBLOCKS, BLOCKDIM>>>(dev_distanceMatrix, dev_dataset, N, DIM);
+        tendbuild = omp_get_wtime();
 
-        // query distance matrix
+        tstartquery = omp_get_wtime();
+        queryDistMatGPU<<<NBLOCKS, BLOCKDIM>>>(dev_resultSet, dev_distanceMatrix, epsilon, N);
+        tendquery = omp_get_wtime();
     }
     else if (MODE == 3)  // build tree on CPU and query on GPU
     {
@@ -494,6 +513,68 @@ void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const double* data
 
 // gpu
 // brute force?
+__global__ void calcDistMatGPU(
+    double* distanceMatrix,
+    double* dataset,
+    const unsigned int N,
+    const unsigned int DIM
+) {
+    const unsigned int tid = threadIdx.x + (blockIdx.x * blockDim.x);
+
+    double dist;
+
+
+    if (tid >= N)
+    {
+        return;
+    }
+
+    for (unsigned int p = 0; p < N; p += 1)
+    {
+        dist = 0.0;
+
+        for (unsigned int d = 0; d < DIM; d += 1)
+        {
+            dist += (dataset[tid * DIM + d] - dataset[p * DIM + d])
+                * (dataset[tid * DIM + d] - dataset[p * DIM + d]);
+        }
+
+        distanceMatrix[tid * N + i] = sqrt(dist);
+    }
+
+
+    return;
+}
+
+
+__global__ void queryDistMatGPU(
+    unsigned int* result,
+    double* distanceMatrix,
+    const double epsilon,
+    const unsigned int N
+) {
+    const unsigned int tid = threadIdx.x + (blockIdx.x * blockDim.x);
+
+    unsigned int neighbors = 0;
+
+    if (tid >= N)
+    {
+        return;
+    }
+
+    for (unsigned int p = 0; p < N; p += 1)
+    {
+        if (distanceMatrix[tid * N + p] <= epsilon)
+        {
+            neighbors += 1;
+        }
+    }
+
+    result[tid] = neighbors += 1;
+
+
+    return;
+}
 
 
 // query kd-tree
@@ -591,7 +672,7 @@ __global__ void queryKdTreeGPU(
     }
 
     
-    return 0;
+    return;
 }
 
 
@@ -603,5 +684,5 @@ __global__ void queryKdTreeGPUWithSharedMem(
     const unsigned int N,
     const unsigned int DIM
 ) {
-    return 0;
+    return;
 }
