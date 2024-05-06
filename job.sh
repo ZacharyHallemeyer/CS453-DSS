@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=CS453_DSS
 
-#SBATCH --output=/scratch/zmh47/CS453_DSS.out
-#SBATCH --error=/scratch/zmh47/CS453_DSS.err
+#SBATCH --output=/scratch/nauID/CS453_DSS.out
+#SBATCH --error=/scratch/nauID/CS453_DSS.err
 
-#SBATCH --time=01:00:00
+#SBATCH --time=05:00:00
 #SBATCH --mem=8192
 #SBATCH -G 1 #resource requirement (1 GPU)
 #SBATCH -C v100 #GPU Model: k80, p100, v100, a100
@@ -18,21 +18,23 @@ FILE=bee_dataset_1D_feature_vectors.txt
 ARCH=70 # GPU ARCHs: a100: 80, v100: 70
 MODE=1
 
-N=100
+N=10000
 DIM=2
-E=10000.0
+E=100.0
+
 
 module load cuda/11.7
+
 for MODE in 0 1
 do
     nvcc -O3 -DMODE=$MODE -arch=compute_$ARCH -code=sm_$ARCH -lcuda -lineinfo -Xcompiler -fopenmp $SRC/kd_tree.cu $SRC/DSS.cu -o DSS
-    for FILE in xy100.csv
+
+    for FILE in xy10000.csv
     do
         for TRIAL in 1 2 3
         do
-            echo -e "\n\nTrial = $TRIAL, File = $FILE"
-            #srun ./DSS $N $DIM $E $DATA/$FILE
-	    srun compute-sanitizer --tool=memcheck ./DSS $N $DIM $E $DATA/$FILE
+            echo -e "\n\nMode = $MODE, File = $FILE, N = $N, E = $E, Trial = $TRIAL"
+            srun ./DSS $N $DIM $E $DATA/$FILE
         done
     done
 done
