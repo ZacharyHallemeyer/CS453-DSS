@@ -70,7 +70,7 @@ void queryKdTreeCPU(
 // gpu code
 // brute force?
 
-// kd-tree
+// query kd-tree
 __global__ void queryKdTreeGPU(
     struct kd_tree_gpu** tree,
     unsigned int* result,
@@ -79,6 +79,18 @@ __global__ void queryKdTreeGPU(
     const unsigned int N,
     const unsigned int DIM
 );
+
+
+__global__ void queryKdTreeGPUWithSharedMem(
+    struct kd_tree_gpu** tree,
+    unsigned int* result,
+    double* dev_dataset,
+    const double epsilon,
+    const unsigned int N,
+    const unsigned int DIM
+);
+
+
 
 // handling data
 void importDataset(
@@ -224,7 +236,24 @@ int main(int argc, char* argv[])
     else if (MODE == 3)  // build tree on CPU and query on GPU
     {
         unsigned int BLOCKDIM = BLOCKSIZE;
-        unsigned int NBLOCKS = ceil(N * 1.0 / BLOCKDIM);
+        unsigned int NBLOCKS = ceil(N*1.0 / BLOCKDIM*1.0);
+        struct kd_tree_gpu* gpu_tree = NULL;
+
+        tstartbuild = omp_get_wtime();
+        struct kd_tree_cpu* tree = buildKdTreeCPU(dataset, N, DIM);
+        tendbuild = omp_get_wtime();
+
+        // move the tree onto the GPU - use another pair of time vars to measure the time it takes
+        // to move the tree over to the GPU
+
+        tstartquery = omp_get_wtime();
+        queryKdTreeGPU<<<NBLOCKS, BLOCKDIM>>>(&gpu_tree, dev_resultSet, dev_dataset, epsilon, N, DIM);
+        tendquery = omp_get_wtime();
+    }
+    else if (MODE == 4)  // use shared memory
+    {
+        unsigned int BLOCKDIM = BLOCKSIZE;
+        unsigned int NBLOCKS = ceil(N*1.0 / BLOCKDIM*1.0);
         struct kd_tree_gpu* gpu_tree = NULL;
 
         tstartbuild = omp_get_wtime();
@@ -234,8 +263,46 @@ int main(int argc, char* argv[])
         // move the tree onto the GPU
 
         tstartquery = omp_get_wtime();
-        queryKdTreeGPU<<<NBLOCKS, BLOCKDIM>>>(&gpu_tree, dev_resultSet, dev_dataset, epsilon, N, DIM);
+        queryKdTreeGPUWithSharedMem<<<NBLOCKS, BLOCKDIM>>>(&gpu_tree, dev_resultSet, dev_dataset, epsilon, N, DIM);
         tendquery = omp_get_wtime();
+    }
+    else if (MODE == 5)  // uses 2D block for querying
+    {
+        unsigned int BLOCKDIM = BLOCKSIZE;
+        unsigned int NBLOCKS = ceil(N*1.0 / BLOCKDIM*1.0);
+        struct kd_tree_gpu* gpu_tree = NULL;
+
+        printf("\nMODE 5 IS NOT IMPLEMENTED YET!");
+        /*
+        tstartbuild = omp_get_wtime();
+        struct kd_tree_cpu* tree = buildKdTreeCPU(dataset, N, DIM);
+        tendbuild = omp_get_wtime();
+
+        // move the tree onto the GPU
+
+        tstartquery = omp_get_wtime();
+        queryKdTreeGPUWithTwoDimBlock<<<NBLOCKS, BLOCKDIM>>>(&gpu_tree, dev_resultSet, dev_dataset, epsilon, N, DIM);
+        tendquery = omp_get_wtime();
+        */
+    }
+    else if (MODE == 6)  // uses 3D block for querying
+    {
+        unsigned int BLOCKDIM = BLOCKSIZE;
+        unsigned int NBLOCKS = ceil(N*1.0 / BLOCKDIM*1.0);
+        struct kd_tree_gpu* gpu_tree = NULL;
+
+        printf("\nMODE 6 IS NOT IMPLEMENTED YET!");
+        /*
+        tstartbuild = omp_get_wtime();
+        struct kd_tree_cpu* tree = buildKdTreeCPU(dataset, N, DIM);
+        tendbuild = omp_get_wtime();
+
+        // move the tree onto the GPU
+
+        tstartquery = omp_get_wtime();
+        queryKdTreeGPUWithThreeDimBlock<<<NBLOCKS, BLOCKDIM>>>(&gpu_tree, dev_resultSet, dev_dataset, epsilon, N, DIM);
+        tendquery = omp_get_wtime();
+        */
     }
 
     //Copy result set from the GPU
@@ -429,7 +496,7 @@ void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const double* data
 // brute force?
 
 
-// kd-tree
+// query kd-tree
 __global__ void queryKdTreeGPU(
         struct kd_tree_gpu** tree,
         unsigned int* result,
@@ -524,5 +591,17 @@ __global__ void queryKdTreeGPU(
     }
 
     
+    return 0;
+}
+
+
+__global__ void queryKdTreeGPUWithSharedMem(
+    struct kd_tree_gpu** tree,
+    unsigned int* result,
+    double* dev_dataset,
+    const double epsilon,
+    const unsigned int N,
+    const unsigned int DIM
+) {
     return 0;
 }
