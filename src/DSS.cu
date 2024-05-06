@@ -49,8 +49,8 @@ kd_tree_cpu* buildKdTreeCPU(const float* dataset, const unsigned int N, const un
 void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const float* dataset, const float epsilon, const unsigned int N, const unsigned int DIM);
 
 // gpu code
-__global__ void queryKdTreeGPU(struct kd_tree_node_gpu* gpu_nodes_array);
-
+__global__ void queryKdTreeGPU(struct kd_tree_node_gpu* gpu_nodes_array, float* testData);
+__global__ void init_node_data(struct kd_tree_node_gpu* gpu_nodes_array, float* data, int insert_index);
 
 // handling data
 void importDataset(
@@ -205,14 +205,59 @@ int main(int argc, char* argv[])
 
         // move the tree onto the GPU
         struct kd_tree_node_gpu* gpu_nodes_array;
+        printf("\nKD tree size: %d", tree->size);
+	//initialize dev gpu node array
 	struct kd_tree_node_gpu* dev_gpu_nodes_array;
-        gpu_nodes_array = (struct kd_tree_node_gpu*)malloc(sizeof(struct kd_tree_node_gpu) * N);
-        //gpuErrchk(cudaMalloc((struct kd_tree_node_gpu**)&gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * N));
-	allocate_tree_gpu(&(tree->root), &gpu_nodes_array, 0);
-        gpuErrchk(cudaMalloc((struct kd_tree_node_gpu**)&dev_gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * N));
-        gpuErrchk(cudaMemcpy(dev_gpu_nodes_array, gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * N, cudaMemcpyHostToDevice));
+            
+	//initialize gpu node array on host
+	//for now, this is just using the an arbritrary size that only works for data set of 100 points;
+	//should figure out a way to calculate gpu node array size based of height of cpu tree;
+	gpu_nodes_array = (struct kd_tree_node_gpu*)malloc(sizeof(struct kd_tree_node_gpu) * 16375);
+
+	//this is redundant for now; instead of itereting through N, it should probably be through calculated size of gpu node array based on height of the cpu tree
+        for(int i = 0; i < N; i++)
+	{
+	    init_kd_tree_node_gpu(&(gpu_nodes_array[i]), DIM);
+	}
         
-        queryKdTreeGPU<<<NBLOCKS, BLOCKDIM>>>(dev_gpu_nodes_array);
+	//gpuErrchk(cudaMalloc((struct kd_tree_node_gpu**)&gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * N));
+	//convert kd tree into heap like structure
+	int max_size = 0;
+	int index_array[N];
+	int index_array_insert = 0;
+	convert_tree_to_array(&(tree->root), &gpu_nodes_array, 0, &max_size, index_array, &index_array_insert);
+	max_size += 1;
+        
+	float* dev_data_gpu;
+        gpuErrchk(cudaMalloc((float**)&(dev_data_gpu), sizeof(float) * DIM));
+        
+	//copy over gpu node array from host to device
+        //printf("\nleft child index at 16374: %d\n", gpu_nodes_array[16374].left_child_index);
+	gpuErrchk(cudaMalloc((struct kd_tree_node_gpu**)&dev_gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * max_size));
+        gpuErrchk(cudaMemcpy(dev_gpu_nodes_array, gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * max_size, cudaMemcpyHostToDevice));
+        int insert_index = 0;
+	for(int i = 0; i < N; i++)
+	{
+	    insert_index = index_array[i];
+
+	    //copy data from current node in gpu node array to a device data array
+	    gpuErrchk(cudaMemcpy(dev_data_gpu, gpu_nodes_array[insert_index].data, sizeof(float) * DIM, cudaMemcpyHostToDevice));
+
+	    //initialize memory and data on dev gpu node array at the current index; has to be on device code :/
+	    init_node_data<<<1, 1>>>(dev_gpu_nodes_array, dev_data_gpu, insert_index);
+	}
+	
+	//FOR TESTING AND DEBUGGING FOR NOW
+	float* testData = (float*)calloc(DIM, sizeof(float));
+	testData[0] = 1337.0;
+        printf("\nfirst val in data before: %f\n", testData[0]);
+	printf("last data val in gpu heap: %f\n", gpu_nodes_array[16374].data[0]);
+	float* dev_testData;
+        gpuErrchk(cudaMalloc((float**)&dev_testData, sizeof(float) * DIM));
+        gpuErrchk(cudaMemcpy(dev_testData, testData, sizeof(float) * DIM, cudaMemcpyHostToDevice));
+        queryKdTreeGPU<<<NBLOCKS, BLOCKDIM>>>(dev_gpu_nodes_array, dev_testData);
+	gpuErrchk(cudaMemcpy(testData, dev_testData, sizeof(float) * DIM, cudaMemcpyDeviceToHost));
+	printf("first val in data after: %f\n", testData[0]);
 	return 0;
     }
 
@@ -399,9 +444,31 @@ void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const float* datas
 //===================================================//
 //                       GPU                         //
 //===================================================//
-__global__ void queryKdTreeGPU(struct kd_tree_node_gpu* gpu_nodes_array)
+
+//querying tree/heap
+__global__ void queryKdTreeGPU(struct kd_tree_node_gpu* gpu_nodes_array, float* testData)
 {
     //testing/debugging for now
-    gpu_nodes_array[0].level = 69;
-    gpu_nodes_array[0].data[0] = 420;
+    //gpu_nodes_array[0].level = 69;
+    //gpu_nodes_array[0].data[0] = 420;
+    unsigned int tid = threadIdx.x + blockDim.x*blockIdx.x;
+
+    if(tid == 0)
+    {
+	//gpu_nodes_array[0].data = (float*)malloc(sizeof(float) * gpu_nodes_array[0].dim);
+        //gpu_nodes_array[0].data[0] = 42069;
+	testData[0] = gpu_nodes_array[16374].data[0];
+    }
+
+    return;
+}
+
+//initialize data pointers on device
+__global__ void init_node_data(struct kd_tree_node_gpu* gpu_nodes_array, float* data, int insert_index)
+{
+    gpu_nodes_array[insert_index].data = (float*)malloc(sizeof(float) * gpu_nodes_array[insert_index].dim);
+    for(int i = 0; i < gpu_nodes_array[insert_index].dim; i++)
+    {
+        gpu_nodes_array[insert_index].data[i] = data[i];
+    }
 }
