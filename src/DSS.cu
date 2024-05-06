@@ -24,8 +24,10 @@ inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort=t
 // Mode 0 is CPU brute force - for checking tree results
 // Mode 1 is CPU sequential implementation of kd-tree
 // Mode 2 brute for query with GPU - for checking and comparing
-// Mode 3 uses CPU to build the kd-tree and GPU to query
-// Mode 4 ...
+// Mode 3 uses CPU to build the kd-tree and move to GPU, then uses GPU to query
+// Mode 4 uses shared memory to move nodes in question to the tree
+// Mode 5 uses 2D block
+// Mode 6 uses 3D block
 // ...
 // #define MODE 0
 
@@ -213,7 +215,7 @@ int main(int argc, char* argv[])
     if (MODE == 2)  // brute force with GPU
     {
         unsigned int BLOCKDIM = BLOCKSIZE;
-        unsigned int NBLOCKS = ceil(N * 1.0 / BLOCKDIM);
+        unsigned int NBLOCKS = ceil(N*1.0 / BLOCKDIM*1.0);
 
         // calculate distance matrix
 
