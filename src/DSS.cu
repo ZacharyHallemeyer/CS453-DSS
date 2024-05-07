@@ -685,79 +685,57 @@ __global__ void queryKdTreeGPU(
     {
         return;
     }
+    // allcate space to store seconds which must be visited
+
+    // secondary index for entering new points in 'seconds' called 's'
+    // loop over seconds array
+    {
+        // label: visit_subtree
+
+        // loop until end of tree
+        {
+            // 1. calc dist
+
+            // 2. check point within 'epsilon'
+            {
+                // 2a. update result
+            }
+
+            // 3. check query less than metric
+            {
+                // 3a. set first to left
+                // 3b. set second to right
+            }
+            // 4. otherwise, assume query greater than metric
+            {
+                // 4a. set first to right
+                // 4b. set second to left
+            }
+
+            // 5. calc dist to split axis
+
+            // 6. check second exists and check split axis within 'epsilon'
+            {
+                // 6a. save second at 's'
+                // 6b. update 's'
+                // 6c. set second at 's' to 0
+            }
+
+            // 7. set working to first
+        }
+
+        // 8. check need to visit a second
+        {
+            // 8a. set working to second at 'i' in seconds
+            // 8b. update 'i'
+            // 8c. go to label 'visit_subtree'
+        }
+        // 9. otherwise, assume query is finished
+        {
+            // 9a. break loop
+        }
+    }
     
-    if (query[working->level % working->dim] < working->metric)
-    {
-        working = &node_array[working->left_child_index];
-    }
-    else
-    {
-        working = &node_array[working->right_child_index];
-    }
-
-    while (1)
-    {
-        determine_first:
-        // 1. determine first and second
-        if (query[working->level % working->dim] < working->metric)
-        {
-            first = &node_array[working->left_child_index];
-            second = &node_array[working->right_child_index];
-        }
-        else
-        {
-            first = &node_array[working->right_child_index];
-            second = &node_array[working->left_child_index];
-        }
-        
-        // 2. if there is(are) child node(s), determine first, if first is not 'visited'
-        if (first != NULL && !first->visited)
-        {
-            // a2. go to first
-            working = first;
-        }
-
-        dist_prime = fabsf(query[working->level % working->dim] - working->metric);
-        
-        // 3. if there is(are) child node(s), determine second, if second is not `visited` - otherwise?
-        if (second != NULL && !second->visited && dist_prime < epsilon)
-        {
-            // a3. go to second
-            working = second;
-            // b3. go to step 1
-            goto determine_first;
-        }
-
-        // 4. calc dist
-        for (unsigned int i = 0; i < working->dim; i += 1)
-        {
-            dist += (query[i] - working->data[i])
-                        * (query[i] - working->data[i]);
-        }
-        dist = sqrt(dist);
-        // determine if point is within epsilon
-        if (dist <= epsilon)
-        {
-            result[tid] += 1;
-        }
-        // 5. mark as `visited`
-        working->visited = 1;
-
-        // 6. if there is a parent
-        if (&node_array[working->parent_index] != NULL)
-        {
-            // a6. go to parent
-            working = &node_array[working->parent_index];
-            // b6. go to step 1
-        }
-        // 7. otherwise, assume tree has been queried
-        else
-        {
-            // a7. break
-            break;
-        }
-    }
-
     
     return;
 }
