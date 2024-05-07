@@ -68,7 +68,7 @@ void queryKdTreeCPU(
 );
 
 // gpu code
-__global__ void init_node_data(struct kd_tree_node_gpu* gpu_nodes_array, float* data, int insert_index);
+__global__ void init_node_data(struct kd_tree_node_gpu* gpu_nodes_array, double* data, int insert_index);
 
 // brute force?
 __global__ void calcDistMatGPU(
@@ -272,7 +272,7 @@ int main(int argc, char* argv[])
         // initialize gpu node array on host
         // for now, this is just using the an arbritrary size that only works for data set of 100 points;
         // should figure out a way to calculate gpu node array size based of height of cpu tree;
-        gpu_nodes_array = (struct kd_tree_node_gpu*)malloc(sizeof(struct kd_tree_node_gpu) * 16375);
+        struct kd_tree_node_gpu* gpu_nodes_array = (struct kd_tree_node_gpu*)malloc(sizeof(struct kd_tree_node_gpu) * 16375);
 
         // this is redundant for now; instead of itereting through N, it should probably be through
         // calculated size of gpu node array based on height of the cpu tree
@@ -289,8 +289,8 @@ int main(int argc, char* argv[])
         convert_tree_to_array(&(tree->root), &gpu_nodes_array, 0, &max_size, index_array, &index_array_insert);
       	max_size += 1;
         
-        float* dev_data_gpu;
-        gpuErrchk(cudaMalloc((float**)&(dev_data_gpu), sizeof(float) * DIM));
+        double* dev_data_gpu;
+        gpuErrchk(cudaMalloc((double**)&(dev_data_gpu), sizeof(double) * DIM));
         
         // copy over gpu node array from host to device
         // printf("\nleft child index at 16374: %d\n", gpu_nodes_array[16374].left_child_index);
@@ -302,7 +302,7 @@ int main(int argc, char* argv[])
             insert_index = index_array[i];
 
             // copy data from current node in gpu node array to a device data array
-            gpuErrchk(cudaMemcpy(dev_data_gpu, gpu_nodes_array[insert_index].data, sizeof(float) * DIM, cudaMemcpyHostToDevice));
+            gpuErrchk(cudaMemcpy(dev_data_gpu, gpu_nodes_array[insert_index].data, sizeof(double) * DIM, cudaMemcpyHostToDevice));
 
             // initialize memory and data on dev gpu node array at the current index; has to be on device code :/
             init_node_data<<<1, 1>>>(dev_gpu_nodes_array, dev_data_gpu, insert_index);
@@ -318,6 +318,8 @@ int main(int argc, char* argv[])
         unsigned int NBLOCKS = ceil(N*1.0 / BLOCKDIM*1.0);
         struct kd_tree_gpu* gpu_tree = NULL;
 
+        printf("\nMODE 4 IS NOT IMPLEMENTED YET!");
+        /*
         tstartbuild = omp_get_wtime();
         struct kd_tree_cpu* tree = buildKdTreeCPU(dataset, N, DIM);
         tendbuild = omp_get_wtime();
@@ -327,6 +329,7 @@ int main(int argc, char* argv[])
         tstartquery = omp_get_wtime();
         queryKdTreeGPUWithSharedMem<<<NBLOCKS, BLOCKDIM>>>(&gpu_tree, dev_resultSet, dev_dataset, epsilon, N, DIM);
         tendquery = omp_get_wtime();
+        */
     }
     else if (MODE == 5)  // uses 2D block for querying
     {
@@ -531,7 +534,7 @@ kd_tree_cpu* buildKdTreeCPU(const double* dataset, const unsigned int N, const u
             data[d] = dataset[p * DIM + d];
         }
 
-        init_kd_tree_node_cpu(&node, data, DIM, 0);
+        init_kd_tree_node_cpu(&node, data, DIM);
         insert(&tree, &node);
     }
 
@@ -552,7 +555,7 @@ void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const double* data
             query[d] = dataset[p * DIM + d];
         }
 
-        points_within_epsilon(tree, query, epsilon, &count);
+        points_within_epsilon_cpu(tree, query, epsilon, &count);
 
         result[p] = count;
     }
@@ -565,7 +568,7 @@ void queryKdTreeCPU(kd_tree_cpu** tree, unsigned int* result, const double* data
 //===================================================//
 
 //querying tree/heap
-__global__ void queryKdTreeGPU(struct kd_tree_node_gpu* gpu_nodes_array, float* testData)
+__global__ void queryKdTreeGPU(struct kd_tree_node_gpu* gpu_nodes_array, double* testData)
 {
     //testing/debugging for now
     //gpu_nodes_array[0].level = 69;
@@ -574,7 +577,7 @@ __global__ void queryKdTreeGPU(struct kd_tree_node_gpu* gpu_nodes_array, float* 
 
     if(tid == 0)
     {
-	//gpu_nodes_array[0].data = (float*)malloc(sizeof(float) * gpu_nodes_array[0].dim);
+	//gpu_nodes_array[0].data = (double*)malloc(sizeof(double) * gpu_nodes_array[0].dim);
         //gpu_nodes_array[0].data[0] = 42069;
 	testData[0] = gpu_nodes_array[16374].data[0];
     }
@@ -584,9 +587,9 @@ __global__ void queryKdTreeGPU(struct kd_tree_node_gpu* gpu_nodes_array, float* 
 
 
 //initialize data pointers on device
-__global__ void init_node_data(struct kd_tree_node_gpu* gpu_nodes_array, float* data, int insert_index)
+__global__ void init_node_data(struct kd_tree_node_gpu* gpu_nodes_array, double* data, int insert_index)
 {
-    gpu_nodes_array[insert_index].data = (float*)malloc(sizeof(float) * gpu_nodes_array[insert_index].dim);
+    gpu_nodes_array[insert_index].data = (double*)malloc(sizeof(double) * gpu_nodes_array[insert_index].dim);
     for(int i = 0; i < gpu_nodes_array[insert_index].dim; i++)
     {
         gpu_nodes_array[insert_index].data[i] = data[i];
@@ -621,7 +624,7 @@ __global__ void calcDistMatGPU(
                 * (dataset[tid * DIM + d] - dataset[p * DIM + d]);
         }
 
-        distanceMatrix[tid * N + i] = sqrt(dist);
+        distanceMatrix[tid * N + p] = sqrt(dist);
     }
 
 
@@ -672,8 +675,8 @@ __global__ void queryKdTreeGPU(
 
     double dist = 0.0;
     double dist_prime = 0.0;
-    double* query = node_array[indices[tid]]->data;
-    struct kd_tree_node_gpu* working = node_array[0];
+    double* query = node_array[indices[tid]].data;
+    struct kd_tree_node_gpu* working = &node_array[0];
     struct kd_tree_node_gpu* first = NULL;
     struct kd_tree_node_gpu* second = NULL;
 
@@ -683,28 +686,28 @@ __global__ void queryKdTreeGPU(
         return;
     }
     
-    if (query[(*working)->level % (*working)->dim] < (*working)->metric)
+    if (query[working->level % working->dim] < working->metric)
     {
-        working = &(*working)->left_child_index;
+        working = &node_array[working->left_child_index];
     }
     else
     {
-        working = &(*working)->right_child_index;
+        working = &node_array[working->right_child_index];
     }
 
     while (1)
     {
         determine_first:
         // 1. determine first and second
-        if (query[(*working)->level % (*working)->dim] < (*working)->metric)
+        if (query[working->level % working->dim] < working->metric)
         {
-            first = &(*working)->left_child_index;
-            second = &(*working)->right_child_index;
+            first = &node_array[working->left_child_index];
+            second = &node_array[working->right_child_index];
         }
         else
         {
-            first = &(*working)->right_child_index;
-            second = &(*working)->left_child_index;
+            first = &node_array[working->right_child_index];
+            second = &node_array[working->left_child_index];
         }
         
         // 2. if there is(are) child node(s), determine first, if first is not 'visited'
@@ -714,7 +717,7 @@ __global__ void queryKdTreeGPU(
             working = first;
         }
 
-        dist_prime = fabsf(query[(*working)->level % (*working)->dim] - (*working)->metric);
+        dist_prime = fabsf(query[working->level % working->dim] - working->metric);
         
         // 3. if there is(are) child node(s), determine second, if second is not `visited` - otherwise?
         if (second != NULL && !second->visited && dist_prime < epsilon)
@@ -726,10 +729,10 @@ __global__ void queryKdTreeGPU(
         }
 
         // 4. calc dist
-        for (unsigned int i = 0; i < (*working)->dim; i += 1)
+        for (unsigned int i = 0; i < working->dim; i += 1)
         {
-            dist += (query[i] - (*working)->data[i])
-                        * (query[i] - (*working)->data[i]);
+            dist += (query[i] - working->data[i])
+                        * (query[i] - working->data[i]);
         }
         dist = sqrt(dist);
         // determine if point is within epsilon
@@ -741,10 +744,10 @@ __global__ void queryKdTreeGPU(
         working->visited = 1;
 
         // 6. if there is a parent
-        if (working->parent_index != NULL)
+        if (&node_array[working->parent_index] != NULL)
         {
             // a6. go to parent
-            working = working->parent_index;
+            working = &node_array[working->parent_index];
             // b6. go to step 1
         }
         // 7. otherwise, assume tree has been queried

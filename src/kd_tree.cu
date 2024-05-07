@@ -171,11 +171,10 @@ void init_kd_tree_cpu(struct kd_tree_cpu** tree)
 void init_kd_tree_node_cpu(
         struct kd_tree_node_cpu** node,
         const double* data,
-        const unsigned int dim,
-        const unsigned int level
+        const unsigned int dim
 ) {
     *node = (struct kd_tree_node_cpu*)malloc(sizeof(struct kd_tree_node_cpu));
-    (*node)->level = level;
+    (*node)->level = 0;
     (*node)->metric = 0;
     (*node)->dim = dim;
     (*node)->data = (double*)malloc(sizeof(double) * dim);
@@ -233,19 +232,19 @@ void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, int dim)
 void convert_tree_to_array(
     struct kd_tree_node_cpu** cpu_node,
     struct kd_tree_node_gpu** gpu_node_array,
-    int insert_index,
-    int* max_size,
-    int* index_array,
-    int* index_array_insert
+    unsigned int insert_index,
+    unsigned int* max_size,
+    unsigned int* index_array,
+    unsigned int* index_array_insert
 ) {
     // check if current node is not null
     if((*cpu_node) != NULL)
     {
     	index_array[*index_array_insert] = insert_index;
     	*index_array_insert += 1;
-            if(insert_index > *max_size)
-    	{
-                *max_size = insert_index;
+        if(insert_index > *max_size)
+        {
+            *max_size = insert_index;
     	}
     	// allocate gpu node at current index
         //cudaMalloc((double**)&((*gpu_node_array)[insert_index].data), (*cpu_node)->dim * sizeof(double));

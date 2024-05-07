@@ -105,10 +105,10 @@ void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, int dim);
 void convert_tree_to_array(
     struct kd_tree_node_cpu** cpu_node,
     struct kd_tree_node_gpu** gpu_node_array,
-    int insert_index,
-    int* max_size,
-    int* index_array,
-    int* index_array_insert
+    unsigned int insert_index,
+    unsigned int* max_size,
+    unsigned int* index_array,
+    unsigned int* index_array_insert
 );
 
 
