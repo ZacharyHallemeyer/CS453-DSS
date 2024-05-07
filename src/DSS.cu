@@ -284,6 +284,7 @@ int main(int argc, char* argv[])
         // gpuErrchk(cudaMalloc((struct kd_tree_node_gpu**)&gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * N));
         // convert kd tree into heap like structure
         unsigned int max_size = 0;
+        unsigned int* dev_index_array;
         unsigned int index_array[N];
         unsigned int index_array_insert = 0;
         convert_tree_to_array(&(tree->root), &gpu_nodes_array, 0, &max_size, index_array, &index_array_insert);
@@ -307,9 +308,12 @@ int main(int argc, char* argv[])
             // initialize memory and data on dev gpu node array at the current index; has to be on device code :/
             init_node_data<<<1, 1>>>(dev_gpu_nodes_array, dev_data_gpu, insert_index);
         }
+
+        gpuErrchk(cudaMalloc((unsigned int**)&dev_index_array, sizeof(unsigned int) * N));
+        gpuErrchk(cudaMemcpy(dev_index_array, index_array, sizeof(unsigned int) * N, cudaMemcpyHostToDevice));
 	
         tstartquery = omp_get_wtime();
-        queryKdTreeGPU<<<NBLOCKS, BLOCKDIM>>>(dev_resultSet, dev_gpu_nodes_array, index_array, epsilon, N, DIM);
+        queryKdTreeGPU<<<NBLOCKS, BLOCKDIM>>>(dev_resultSet, dev_gpu_nodes_array, dev_index_array, epsilon, N, DIM);
         tendquery = omp_get_wtime();
     }
     else if (MODE == 4)  // use shared memory
@@ -673,69 +677,104 @@ __global__ void queryKdTreeGPU(
 ) {
     const unsigned int tid = threadIdx.x + (blockIdx.x * blockDim.x);
 
-    double dist = 0.0;
-    double dist_prime = 0.0;
-    double* query = node_array[indices[tid]].data;
-    struct kd_tree_node_gpu* working = &node_array[0];
-    struct kd_tree_node_gpu* first = NULL;
-    struct kd_tree_node_gpu* second = NULL;
-
     
-    if (tid > N)
+    if (tid >= N)
     {
         return;
     }
+
+    double dist = 0.0;
+    double dist_prime = 0.0;
+    unsigned int count = 0;
+    unsigned int first_index = 0;
+    unsigned int second_index = 0;
+    double* query = node_array[indices[tid]].data;
+    struct kd_tree_node_gpu* working = &node_array[0];
+
     // allcate space to store seconds which must be visited
+    //const unsigned int NUM_SECONDS = ceil(N*1.0 / 2.0);
+    unsigned int* seconds = (unsigned int*)malloc(sizeof(unsigned int) * N);  // guess of how many times the second will be visited
 
     // secondary index for entering new points in 'seconds' called 's'
+    unsigned int s = 0;
+    unsigned int i = 0;
     // loop over seconds array
+    while (i < N)
     {
         // label: visit_subtree
+        visit_subtree:
 
         // loop until end of tree
+        while (working != NULL)
         {
+            dist = 0.0;
+            dist_prime = 0.0;
             // 1. calc dist
+            for (unsigned int d = 0; d < DIM; d += 1)
+            {
+                dist += (query[i] - working->data[i]) * (query[i] - working->data[i]);
+            }
+            dist = sqrt(dist);
 
             // 2. check point within 'epsilon'
+            if (dist <= epsilon)
             {
                 // 2a. update result
+                count += 1;
             }
 
             // 3. check query less than metric
+            if (query[working->level % DIM] < working->metric)
             {
                 // 3a. set first to left
+                first_index = working->left_child_index;
                 // 3b. set second to right
+                second_index = working->right_child_index;
             }
             // 4. otherwise, assume query greater than metric
+            else
             {
                 // 4a. set first to right
+                first_index = working->right_child_index;
                 // 4b. set second to left
+                second_index = working->left_child_index;
             }
 
             // 5. calc dist to split axis
+            dist_prime = fabsf(query[working->level % DIM] - working->metric);
 
             // 6. check second exists and check split axis within 'epsilon'
+            if (s < N && second_index > 0 && dist_prime < epsilon)
             {
                 // 6a. save second at 's'
+                seconds[s] = second_index;
                 // 6b. update 's'
+                s += 1;
                 // 6c. set second at 's' to 0
             }
 
-            // 7. set working to first
+            // 7. set workin->to first
+            working = &node_array[first_index];
         }
 
         // 8. check need to visit a second
+        if (seconds[i] > 0)
         {
-            // 8a. set working to second at 'i' in seconds
+            // 8a. set workin->to second at 'i' in seconds
+            working = &node_array[seconds[i]];
             // 8b. update 'i'
+            i += 1;
             // 8c. go to label 'visit_subtree'
+            goto visit_subtree;
         }
         // 9. otherwise, assume query is finished
+        else
         {
             // 9a. break loop
+            break;
         }
     }
-    
+ 
     
     return;
 }
