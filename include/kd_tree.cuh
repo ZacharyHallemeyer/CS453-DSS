@@ -99,7 +99,7 @@ struct kd_tree_node_gpu
 };
 
 
-void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, int dim);
+void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, unsigned int dim);
 
 
 void convert_tree_to_array(

@@ -217,15 +217,15 @@ void print_tree(struct kd_tree_cpu* tree)
 
 
 // ============== GPU
-void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, int dim)
+void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, unsigned int dim)
 {
     (*gpu_node).data = (double*)calloc(dim, sizeof(double));
     (*gpu_node).level = 0;
     (*gpu_node).metric = 0;
     (*gpu_node).dim = dim;
-    (*gpu_node).left_child_index = -1;
-    (*gpu_node).right_child_index = -1;
-    (*gpu_node).parent_index = -1;
+    (*gpu_node).left_child_index = 0;
+    (*gpu_node).right_child_index = 0;
+    (*gpu_node).parent_index = 0;
 
 }
 
