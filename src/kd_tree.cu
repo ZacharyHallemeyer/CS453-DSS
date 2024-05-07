@@ -145,7 +145,7 @@ void points_within_epsilon_cpu(
 ) {
     if ((*tree)->root != NULL)
     {
-        __points_within_epsilon(&(*tree)->root, query, epsilon, count);
+        __points_within_epsilon_cpu(&(*tree)->root, query, epsilon, count);
     }
 }
 
@@ -216,10 +216,11 @@ void print_tree(struct kd_tree_cpu* tree)
 }
 
 
+
 // ============== GPU
 void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, int dim)
 {
-    (*gpu_node).data = (float*)calloc(dim, sizeof(float));
+    (*gpu_node).data = (double*)calloc(dim, sizeof(double));
     (*gpu_node).level = 0;
     (*gpu_node).metric = 0;
     (*gpu_node).dim = dim;
@@ -229,52 +230,59 @@ void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, int dim)
 
 }
 
-void convert_tree_to_array(struct kd_tree_node_cpu** cpu_node, struct kd_tree_node_gpu** gpu_node_array, int insert_index, 
-		           int* max_size, int* index_array, int* index_array_insert)
-{
+void convert_tree_to_array(
+    struct kd_tree_node_cpu** cpu_node,
+    struct kd_tree_node_gpu** gpu_node_array,
+    int insert_index,
+    int* max_size,
+    int* index_array,
+    int* index_array_insert
+) {
     // check if current node is not null
     if((*cpu_node) != NULL)
     {
-	index_array[*index_array_insert] = insert_index;
-	*index_array_insert += 1;
-        if(insert_index > *max_size)
-	{
-            *max_size = insert_index;
-	}
-	// allocate gpu node at current index
-        //cudaMalloc((float**)&((*gpu_node_array)[insert_index].data), (*cpu_node)->dim * sizeof(float));
-	(*gpu_node_array)[insert_index].data = (float*)malloc(sizeof(float) * (*cpu_node)->dim);
+    	index_array[*index_array_insert] = insert_index;
+    	*index_array_insert += 1;
+            if(insert_index > *max_size)
+    	{
+                *max_size = insert_index;
+    	}
+    	// allocate gpu node at current index
+        //cudaMalloc((double**)&((*gpu_node_array)[insert_index].data), (*cpu_node)->dim * sizeof(double));
+    	(*gpu_node_array)[insert_index].data = (double*)malloc(sizeof(double) * (*cpu_node)->dim);
         
-	//copy data from current cpu node to gpu node
+    	//copy data from current cpu node to gpu node
         (*gpu_node_array)[insert_index].level = (*cpu_node)->level;
         (*gpu_node_array)[insert_index].metric = (*cpu_node)->metric;
         (*gpu_node_array)[insert_index].dim = (*cpu_node)->dim;
-  for(int i = 0; i < (*cpu_node)->dim; i++)
-	{
+        for (int i = 0; i < (*cpu_node)->dim; i++)
+    	{
             (*gpu_node_array)[insert_index].data[i] = (*cpu_node)->data[i];
-	}
+    	}
 
-        //cudaMemcpy((*gpu_node_array)[insert_index].data, (*cpu_node)->data, (*gpu_node_array)[insert_index].dim * sizeof(float), cudaMemcpyHostToDevice);
+        // cudaMemcpy((*gpu_node_array)[insert_index].data, (*cpu_node)->data, (*gpu_node_array)[insert_index].dim * sizeof(double), cudaMemcpyHostToDevice);
         
-	//initialize left and right indicies
+    	// initialize left and right indicies
         (*gpu_node_array)[insert_index].left_child_index = (2 * insert_index) + 1;
         (*gpu_node_array)[insert_index].right_child_index = (2 * insert_index) + 2;
         (*gpu_node_array)[insert_index].parent_index = (insert_index - 1) / 2;
         //printf("INSERT INDEX: %d; current level: %d\n", insert_index,
                //(*gpu_node_array)[insert_index].level);
-	//printf("INSERT INDEX: %d; current child indicies: %d, %d\n", insert_index,
-               //(*gpu_node_array)[insert_index].left_child_index, (*gpu_node_array)[insert_index].right_child_index);
-	//recurse left
-	convert_tree_to_array(&((*cpu_node)->left), gpu_node_array, (2 * insert_index) + 1, max_size, index_array, index_array_insert);
+    	//printf("INSERT INDEX: %d; current child indicies: %d, %d\n", insert_index,
+                   //(*gpu_node_array)[insert_index].left_child_index, (*gpu_node_array)[insert_index].right_child_index);
+    	// recurse left
+    	convert_tree_to_array(&((*cpu_node)->left), gpu_node_array, (2 * insert_index) + 1, max_size, index_array, index_array_insert);
 
-	//recurse right
+    	// recurse right
         convert_tree_to_array(&((*cpu_node)->right), gpu_node_array, (2 * insert_index) + 2, max_size, index_array, index_array_insert);
-	
     }
 }
 
-void allocate_gpu_memory(struct kd_tree_node_cpu** cpu_nodes, struct kd_tree_node_gpu** gpu_nodes, int num_nodes) {
-    
+void allocate_gpu_memory(
+    struct kd_tree_node_cpu** cpu_nodes,
+    struct kd_tree_node_gpu** gpu_nodes,
+    int num_nodes
+) {
   /*
   cudaMalloc((void**)&(*gpu_nodes), num_nodes * sizeof(struct kd_tree_node_gpu));
 
