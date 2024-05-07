@@ -102,8 +102,14 @@ struct kd_tree_node_gpu
 void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, int dim);
 
 
-void convert_tree_to_array(struct kd_tree_node_cpu** cpu_node, struct kd_tree_node_gpu** gpu_node_array, int insert_index, 
-		           int* max_size, int* index_array, int* index_array_insert);
+void convert_tree_to_array(
+    struct kd_tree_node_cpu** cpu_node,
+    struct kd_tree_node_gpu** gpu_node_array,
+    int insert_index,
+    int* max_size,
+    int* index_array,
+    int* index_array_insert
+);
 
 
 void __points_within_epsilon_gpu(
