@@ -109,6 +109,11 @@ __global__ void queryKdTreeGPUWithSharedMem(
 
 
 
+// device
+__device__ void zero_seconds(unsigned int* seconds, const unsigned int size);
+
+
+
 // handling data
 void importDataset(
     char* fname,
@@ -688,33 +693,39 @@ __global__ void queryKdTreeGPU(
     unsigned int count = 0;
     unsigned int first_index = 0;
     unsigned int second_index = 0;
+    //printf("\n\ngrabbing query...");
     double* query = node_array[indices[tid]].data;
+    //printf("\ngrabbed query!");
     struct kd_tree_node_gpu* working = &node_array[0];
 
     // allcate space to store seconds which must be visited
-    //const unsigned int NUM_SECONDS = ceil(N*1.0 / 2.0);
-    unsigned int* seconds = (unsigned int*)malloc(sizeof(unsigned int) * N);  // guess of how many times the second will be visited
+    const unsigned int NUM_SECONDS = N;
+    unsigned int* seconds = (unsigned int*)malloc(sizeof(unsigned int) * NUM_SECONDS);  // guess of how many times the second will be visited
+    zero_seconds(seconds, NUM_SECONDS);
 
     // secondary index for entering new points in 'seconds' called 's'
     unsigned int s = 0;
     unsigned int i = 0;
     // loop over seconds array
-    while (i < N)
+    while (i < NUM_SECONDS)
     {
         // label: visit_subtree
         visit_subtree:
 
         // loop until end of tree
+        //printf("\n\nvisiting a sub-tree...");
         while (working != NULL)
         {
             dist = 0.0;
             dist_prime = 0.0;
             // 1. calc dist
+            //printf("\ncalculating distance...");
             for (unsigned int d = 0; d < DIM; d += 1)
             {
-                dist += (query[i] - working->data[i]) * (query[i] - working->data[i]);
+                dist += (query[d] - working->data[d]) * (query[d] - working->data[d]);
             }
             dist = sqrt(dist);
+            //printf("\nfinised calculating distance!");
 
             // 2. check point within 'epsilon'
             if (dist <= epsilon)
@@ -724,6 +735,7 @@ __global__ void queryKdTreeGPU(
             }
 
             // 3. check query less than metric
+            //printf("\ndetermining first and second nodes...");
             if (query[working->level % DIM] < working->metric)
             {
                 // 3a. set first to left
@@ -739,12 +751,14 @@ __global__ void queryKdTreeGPU(
                 // 4b. set second to left
                 second_index = working->left_child_index;
             }
+            //printf("\nfinished determining first and seconds nodes!");
 
             // 5. calc dist to split axis
             dist_prime = fabsf(query[working->level % DIM] - working->metric);
 
             // 6. check second exists and check split axis within 'epsilon'
-            if (s < N && second_index > 0 && dist_prime < epsilon)
+            //printf("\n\nsaving and updating index 's'...");
+            if (s < NUM_SECONDS && second_index > 0 && dist_prime < epsilon)
             {
                 // 6a. save second at 's'
                 seconds[s] = second_index;
@@ -752,15 +766,24 @@ __global__ void queryKdTreeGPU(
                 s += 1;
                 // 6c. set second at 's' to 0
             }
+            //printf("\nfinished saving second and updating index 's'!");
 
             // 7. set workin->to first
+            //printf("\n\nmoving 'working' to node at 'first_index'...");
             working = &node_array[first_index];
+            //printf("\nfinished moving 'working' to node at 'first_index'!");
         }
+        //printf("\nfinished visiting sub-tree!");
 
         // 8. check need to visit a second
-        if (seconds[i] > 0)
+        /*
+        printf("\n\nreaching into 'seconds' at 'i'...");
+        seconds[i] = 0;
+        printf("\nfinished reaching into 'seconds' at 'i' and setting value to 0!");
+        */
+        if (i < NUM_SECONDS && seconds[i] > 0)
         {
-            // 8a. set workin->to second at 'i' in seconds
+            // 8a. set working to second at 'i' in seconds
             working = &node_array[seconds[i]];
             // 8b. update 'i'
             i += 1;
@@ -774,6 +797,10 @@ __global__ void queryKdTreeGPU(
             break;
         }
     }
+
+    printf("\n\nupdating result at 'tid'...");
+    result[tid] = count;
+    printf("\nfinished updating result at 'tid'!");
  
     
     return;
@@ -788,4 +815,15 @@ __global__ void queryKdTreeGPUWithSharedMem(
     const unsigned int DIM
 ) {
     return;
+}
+
+
+
+// device
+__device__ void zero_seconds(unsigned int* seconds, const unsigned int size)
+{
+    for (unsigned int i = 0; i < size; i += 1)
+    {
+        seconds[i] = 0;
+    }
 }
