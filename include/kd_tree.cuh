@@ -76,7 +76,7 @@ void print_tree(struct kd_tree_cpu* tree);
 
 void __print_tree(struct kd_tree_node_cpu* node);
 
-
+void set_tree_height(struct kd_tree_node_cpu* node, unsigned int* max_height);
 
 // ============ GPU
 struct kd_tree_tree
@@ -92,7 +92,6 @@ struct kd_tree_node_gpu
     double metric;
     unsigned int dim;
     double* data;
-    unsigned int visited;
     unsigned int left_child_index;
     unsigned int right_child_index;
     unsigned int parent_index;
@@ -100,7 +99,7 @@ struct kd_tree_node_gpu
 
 
 void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, unsigned int dim);
-
+unsigned int get_array_size(unsigned int tree_height);
 
 void convert_tree_to_array(
     struct kd_tree_node_cpu** cpu_node,
