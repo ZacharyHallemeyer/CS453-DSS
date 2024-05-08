@@ -16,11 +16,11 @@ struct kd_tree_node_cpu
     // provides an easy way for nodes to compare dimensions
     unsigned int level;
     // the dimension along which to split the space
-    float metric;
+    double metric;
     // dimensions of the point
     unsigned int dim;
     // data this node represents
-    float* data;
+    double* data;
     struct kd_tree_node_cpu* left;
     struct kd_tree_node_cpu* right;
     struct kd_tree_node_cpu* parent;
@@ -28,10 +28,10 @@ struct kd_tree_node_cpu
 
 
 // function prototypes
-void __points_within_epsilon(
+void __points_within_epsilon_cpu(
     struct kd_tree_node_cpu** node,
-    const float* query,
-    const float epsilon,
+    double* query,
+    const double epsilon,
     unsigned int* count
 );
 
@@ -47,10 +47,10 @@ void __insert(
 void __free_kd_tree_cpu(struct kd_tree_node_cpu** node);
 
 
-void points_within_epsilon(
+void points_within_epsilon_cpu(
     struct kd_tree_cpu** tree,
-    const float* query,
-    const float epsilon,
+    double* query,
+    const double epsilon,
     unsigned int* count
 );
 
@@ -63,9 +63,8 @@ void init_kd_tree_cpu(struct kd_tree_cpu** tree);
 
 void init_kd_tree_node_cpu(
     struct kd_tree_node_cpu** node,
-    const float* data,
-    const unsigned int dim,
-    const unsigned int level
+    const double* data,
+    const unsigned int dim
 );
 
 
@@ -76,3 +75,60 @@ void print_tree(struct kd_tree_cpu* tree);
 
 
 void __print_tree(struct kd_tree_node_cpu* node);
+
+void set_tree_height(struct kd_tree_node_cpu* node, unsigned int* max_height);
+
+// ============ GPU
+struct kd_tree_tree
+{
+    unsigned int size;
+    unsigned int height;
+    struct kd_tree_node_gpu* root;
+};
+
+struct kd_tree_node_gpu
+{
+    unsigned int level;
+    double metric;
+    unsigned int dim;
+    double* data;
+    unsigned int left_child_index;
+    unsigned int right_child_index;
+    unsigned int parent_index;
+};
+
+
+void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, unsigned int dim);
+unsigned int get_array_size(unsigned int tree_height);
+
+void convert_tree_to_array(
+    struct kd_tree_node_cpu** cpu_node,
+    struct kd_tree_node_gpu** gpu_node_array,
+    unsigned int insert_index,
+    unsigned int* max_size,
+    unsigned int* index_array,
+    unsigned int* index_array_insert
+);
+
+
+void __points_within_epsilon_gpu(
+    struct kd_tree_node_gpu** tree,
+    double* query,
+    const double epsilon,
+    unsigned int* count
+);
+
+
+void allocate_gpu_memory(
+    struct kd_tree_node_cpu** cpu_nodes,
+    struct kd_tree_node_gpu** gpu_nodes,
+    int num_nodes
+);
+
+
+void points_within_epsilon_gpu(
+    struct kd_tree_gpu** tree,
+    double* query,
+    const double epsilon,
+    unsigned int* count
+);
