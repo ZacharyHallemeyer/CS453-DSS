@@ -214,9 +214,36 @@ void print_tree(struct kd_tree_cpu* tree)
     __print_tree(tree->root);
 }
 
+void set_tree_height(struct kd_tree_node_cpu* node, unsigned int* max_height)
+{
+    if(node != NULL)
+    {
+        if(node->level > *max_height)
+        {
+            *max_height = node->level;
+        }
 
+	set_tree_height(node->left, max_height);
+
+	set_tree_height(node->right, max_height);
+    }
+}
 
 // ============== GPU
+unsigned int get_array_size(unsigned int tree_height)
+{
+    unsigned int size_sum = 1;
+
+    while(tree_height > 0)
+    {
+        size_sum += pow(2.0, (double)tree_height);
+
+	tree_height--;
+    }
+
+    return size_sum;
+}
+
 void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, unsigned int dim)
 {
     (*gpu_node).data = (double*)calloc(dim, sizeof(double));
@@ -262,23 +289,23 @@ void convert_tree_to_array(
         // cudaMemcpy((*gpu_node_array)[insert_index].data, (*cpu_node)->data, (*gpu_node_array)[insert_index].dim * sizeof(double), cudaMemcpyHostToDevice);
         
     	// initialize left and right indicies
-	if(((*cpu_node)->left) != NULL)
-	{
+	//if(((*cpu_node)->left) != NULL)
+	//{
             (*gpu_node_array)[insert_index].left_child_index = (2 * insert_index) + 1;
-	}
-	else
-	{
-            (*gpu_node_array)[insert_index].left_child_index = -1;
-	}
+	//}
+	//else
+	//{
+            //(*gpu_node_array)[insert_index].left_child_index = -1;
+	//}
 
-	if(((*cpu_node)->right) != NULL)
-	{
+	//if(((*cpu_node)->right) != NULL)
+	//{
             (*gpu_node_array)[insert_index].right_child_index = (2 * insert_index) + 2;
-	}
-	else
-	{
-            (*gpu_node_array)[insert_index].right_child_index = ;
-	}
+	//}
+	//else
+	//{
+            //(*gpu_node_array)[insert_index].right_child_index = -1;
+	//}
         (*gpu_node_array)[insert_index].parent_index = (insert_index - 1) / 2;
         //printf("INSERT INDEX: %d; current level: %d\n", insert_index,
                //(*gpu_node_array)[insert_index].level);

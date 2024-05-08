@@ -275,9 +275,10 @@ int main(int argc, char* argv[])
         struct kd_tree_node_gpu* dev_gpu_nodes_array;
        
         // initialize gpu node array on host
-        // for now, this is just using the an arbritrary size that only works for data set of 100 points;
-        // should figure out a way to calculate gpu node array size based of height of cpu tree;
-        struct kd_tree_node_gpu* gpu_nodes_array = (struct kd_tree_node_gpu*)malloc(sizeof(struct kd_tree_node_gpu) * 16375);
+        // calculate gpu node array size based of height of cpu tree;
+	set_tree_height(tree->root, &(tree->height));
+	unsigned int gpu_node_array_size = get_array_size(tree->height);
+        struct kd_tree_node_gpu* gpu_nodes_array = (struct kd_tree_node_gpu*)malloc(sizeof(struct kd_tree_node_gpu) * gpu_node_array_size);
 
         // this is redundant for now; instead of itereting through N, it should probably be through
         // calculated size of gpu node array based on height of the cpu tree
