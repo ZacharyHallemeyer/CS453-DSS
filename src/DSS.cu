@@ -320,6 +320,7 @@ int main(int argc, char* argv[])
         tstartquery = omp_get_wtime();
         queryKdTreeGPU<<<NBLOCKS, BLOCKDIM>>>(dev_resultSet, dev_gpu_nodes_array, dev_index_array, epsilon, N, DIM);
         tendquery = omp_get_wtime();
+	//return 0;
     }
     else if (MODE == 4)  // use shared memory
     {

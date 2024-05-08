@@ -262,8 +262,23 @@ void convert_tree_to_array(
         // cudaMemcpy((*gpu_node_array)[insert_index].data, (*cpu_node)->data, (*gpu_node_array)[insert_index].dim * sizeof(double), cudaMemcpyHostToDevice);
         
     	// initialize left and right indicies
-        (*gpu_node_array)[insert_index].left_child_index = (2 * insert_index) + 1;
-        (*gpu_node_array)[insert_index].right_child_index = (2 * insert_index) + 2;
+	if(((*cpu_node)->left) != NULL)
+	{
+            (*gpu_node_array)[insert_index].left_child_index = (2 * insert_index) + 1;
+	}
+	else
+	{
+            (*gpu_node_array)[insert_index].left_child_index = -1;
+	}
+
+	if(((*cpu_node)->right) != NULL)
+	{
+            (*gpu_node_array)[insert_index].right_child_index = (2 * insert_index) + 2;
+	}
+	else
+	{
+            (*gpu_node_array)[insert_index].right_child_index = ;
+	}
         (*gpu_node_array)[insert_index].parent_index = (insert_index - 1) / 2;
         //printf("INSERT INDEX: %d; current level: %d\n", insert_index,
                //(*gpu_node_array)[insert_index].level);
