@@ -34,8 +34,7 @@ do
         for TRIAL in 1
         do
             echo -e "\n\nMode = $MODE, File = $FILE, N = $N, E = $E, Trial = $TRIAL"
-            srun compute-sanitizer --tool=memcheck ./DSS $DIM $E $DATA/$FILE
-	    #srun ./DSS $N $DIM $E $DATA/$FILE
+	    srun ./DSS $N $DIM $E $DATA/$FILE
         done
     done
 done
