@@ -33,7 +33,7 @@ inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort=t
 
 //Define any constants here
 #define BLOCKSIZE 128
-
+//#define NSIZE 10000
 using namespace std;
 
 
@@ -91,7 +91,6 @@ __global__ void queryDistMatGPU(
 __global__ void queryKdTreeGPU(
     unsigned int* result,
     struct kd_tree_node_gpu* node_array,
-    unsigned int* indices,
     const double epsilon,
     const unsigned int N,
     const unsigned int DIM
@@ -130,21 +129,21 @@ int main(int argc, char* argv[])
     warmUpGPU();
 
     char inputFname[500];
-    unsigned int N = 0;
+    unsigned int N = NELEM;
     unsigned int DIM = 0;
     double epsilon = 0;
 
 
-    if (argc != 5)
+    if (argc != 4)
     {
         fprintf(stderr, "Please provide the following on the command line: N (number of lines in the file), dimensionality (number of coordinates per point), epsilon, dataset filename.\n");
         exit(0);
     }
 
-    sscanf(argv[1], "%d", &N);
-    sscanf(argv[2], "%d", &DIM);
-    sscanf(argv[3], "%f", &epsilon);
-    strcpy(inputFname, argv[4]);
+    //sscanf(argv[1], "%d", &N);
+    sscanf(argv[1], "%d", &DIM);
+    sscanf(argv[2], "%f", &epsilon);
+    strcpy(inputFname, argv[3]);
 
     checkParams(N, DIM);
 
@@ -278,10 +277,9 @@ int main(int argc, char* argv[])
         // calculate gpu node array size based of height of cpu tree;
 	set_tree_height(tree->root, &(tree->height));
 	unsigned int gpu_node_array_size = get_array_size(tree->height);
-        struct kd_tree_node_gpu* gpu_nodes_array = (struct kd_tree_node_gpu*)malloc(sizeof(struct kd_tree_node_gpu) * gpu_node_array_size);
-
-        // this is redundant for now; instead of itereting through N, it should probably be through
-        // calculated size of gpu node array based on height of the cpu tree
+        //struct kd_tree_node_gpu* gpu_nodes_array = (struct kd_tree_node_gpu*)malloc(sizeof(struct kd_tree_node_gpu) * gpu_node_array_size);
+        struct kd_tree_node_gpu* gpu_nodes_array = (struct kd_tree_node_gpu*)malloc(sizeof(struct kd_tree_node_gpu) * N);
+        //initialize gpu array
         for(unsigned int i = 0; i < N; i++)
         {
             init_kd_tree_node_gpu(&(gpu_nodes_array[i]), DIM);
@@ -289,39 +287,32 @@ int main(int argc, char* argv[])
         
         // gpuErrchk(cudaMalloc((struct kd_tree_node_gpu**)&gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * N));
         // convert kd tree into heap like structure
-        unsigned int max_size = 0;
-        unsigned int* dev_index_array;
-        unsigned int index_array[N];
-        unsigned int index_array_insert = 0;
-        convert_tree_to_array(&(tree->root), &gpu_nodes_array, 0, &max_size, index_array, &index_array_insert);
-      	max_size += 1;
-        
+	unsigned int index_insert = 0;
+        convert_tree_to_array(&(tree->root), &gpu_nodes_array, &index_insert);
+        //for(int i = 0; i < N; i++)
+	//{
+        //    printf("\ncurrent node metric: %lf", gpu_nodes_array[i].metric);
+	//}
+
         double* dev_data_gpu;
         gpuErrchk(cudaMalloc((double**)&(dev_data_gpu), sizeof(double) * DIM));
         
         // copy over gpu node array from host to device
-        // printf("\nleft child index at 16374: %d\n", gpu_nodes_array[16374].left_child_index);
-        gpuErrchk(cudaMalloc((struct kd_tree_node_gpu**)&dev_gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * max_size));
-        gpuErrchk(cudaMemcpy(dev_gpu_nodes_array, gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * max_size, cudaMemcpyHostToDevice));
-        unsigned int insert_index = 0;
+        gpuErrchk(cudaMalloc((struct kd_tree_node_gpu**)&dev_gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * N));
+        gpuErrchk(cudaMemcpy(dev_gpu_nodes_array, gpu_nodes_array, sizeof(struct kd_tree_node_gpu) * N, cudaMemcpyHostToDevice));
         for(unsigned int i = 0; i < N; i++)
         {
-            insert_index = index_array[i];
-
             // copy data from current node in gpu node array to a device data array
-            gpuErrchk(cudaMemcpy(dev_data_gpu, gpu_nodes_array[insert_index].data, sizeof(double) * DIM, cudaMemcpyHostToDevice));
+            gpuErrchk(cudaMemcpy(dev_data_gpu, gpu_nodes_array[i].data, sizeof(double) * DIM, cudaMemcpyHostToDevice));
 
             // initialize memory and data on dev gpu node array at the current index; has to be on device code :/
-            init_node_data<<<1, 1>>>(dev_gpu_nodes_array, dev_data_gpu, insert_index);
+            init_node_data<<<1, 1>>>(dev_gpu_nodes_array, dev_data_gpu, i);
         }
 
-        gpuErrchk(cudaMalloc((unsigned int**)&dev_index_array, sizeof(unsigned int) * N));
-        gpuErrchk(cudaMemcpy(dev_index_array, index_array, sizeof(unsigned int) * N, cudaMemcpyHostToDevice));
-	
+        //begin querying
         tstartquery = omp_get_wtime();
-        queryKdTreeGPU<<<NBLOCKS, BLOCKDIM>>>(dev_resultSet, dev_gpu_nodes_array, dev_index_array, epsilon, N, DIM);
+        queryKdTreeGPU<<<NBLOCKS, BLOCKDIM>>>(dev_resultSet, dev_gpu_nodes_array, epsilon, N, DIM);
         tendquery = omp_get_wtime();
-	//return 0;
     }
     else if (MODE == 4)  // use shared memory
     {
@@ -430,9 +421,9 @@ void warmUpGPU()
 
 void checkParams(unsigned int N, unsigned int DIM)
 {
-    if (N <= 0 || DIM <= 0)
+    if (DIM <= 0)
     {
-        fprintf(stderr, "\n Invalid parameters: Error, N: %u, DIM: %u", N, DIM);
+        fprintf(stderr, "\n Invalid parameters: Error, DIM: %u", DIM);
         fprintf(stderr, "\nReturning");
         exit(0);
     }
@@ -677,7 +668,6 @@ __global__ void queryDistMatGPU(
 __global__ void queryKdTreeGPU(
         unsigned int* result,
         struct kd_tree_node_gpu* node_array,
-        unsigned int* indices,
         const double epsilon,
         const unsigned int N,
         const unsigned int DIM
@@ -693,16 +683,21 @@ __global__ void queryKdTreeGPU(
     double dist = 0.0;
     double dist_prime = 0.0;
     unsigned int count = 0;
-    unsigned int first_index = 0;
-    unsigned int second_index = 0;
+    int first_index = 0;
+    int second_index = 0;
     //printf("\n\ngrabbing query...");
-    double* query = node_array[indices[tid]].data;
+    //double* query = node_array[indices[tid]].data;
+    double* query = node_array[tid].data;
     //printf("\ngrabbed query!");
     struct kd_tree_node_gpu* working = &node_array[0];
 
     // allcate space to store seconds which must be visited
     const unsigned int NUM_SECONDS = N;
-    unsigned int* seconds = (unsigned int*)malloc(sizeof(unsigned int) * NUM_SECONDS);  // guess of how many times the second will be visited
+
+    //have to use constant NELEM in order to do this
+    //the alternative of dynamic memory breaks with large N
+    unsigned int seconds[NELEM];
+    //unsigned int* seconds = (unsigned int*)malloc(sizeof(unsigned int) * NUM_SECONDS);  // guess of how many times the second will be visited
     zero_seconds(seconds, NUM_SECONDS);
 
     // secondary index for entering new points in 'seconds' called 's'
@@ -772,7 +767,15 @@ __global__ void queryKdTreeGPU(
 
             // 7. set workin->to first
             //printf("\n\nmoving 'working' to node at 'first_index'...");
-            working = &node_array[first_index];
+	    if(first_index != -1)
+	    {
+                working = &node_array[first_index];
+	    }
+
+	    else
+	    {
+                working = NULL;
+	    }
             //printf("\nfinished moving 'working' to node at 'first_index'!");
         }
         //printf("\nfinished visiting sub-tree!");
@@ -800,9 +803,9 @@ __global__ void queryKdTreeGPU(
         }
     }
 
-    printf("\n\nupdating result at 'tid'...");
+    //printf("\n\nupdating result at 'tid'...");
     result[tid] = count;
-    printf("\nfinished updating result at 'tid'!");
+    //printf("\nfinished updating result at 'tid'!");
  
     
     return;
