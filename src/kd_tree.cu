@@ -248,7 +248,7 @@ void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, unsigned int dim)
 {
     (*gpu_node).data = (double*)calloc(dim, sizeof(double));
     (*gpu_node).level = 0;
-    (*gpu_node).metric = 0;
+    (*gpu_node).metric = -1;
     (*gpu_node).dim = dim;
     (*gpu_node).left_child_index = 0;
     (*gpu_node).right_child_index = 0;
@@ -259,63 +259,75 @@ void init_kd_tree_node_gpu(struct kd_tree_node_gpu* gpu_node, unsigned int dim)
 void convert_tree_to_array(
     struct kd_tree_node_cpu** cpu_node,
     struct kd_tree_node_gpu** gpu_node_array,
-    unsigned int insert_index,
-    unsigned int* max_size,
-    unsigned int* index_array,
-    unsigned int* index_array_insert
+    unsigned int* insert_index
 ) {
     // check if current node is not null
     if((*cpu_node) != NULL)
     {
-    	index_array[*index_array_insert] = insert_index;
-    	*index_array_insert += 1;
-        if(insert_index > *max_size)
-        {
-            *max_size = insert_index;
-    	}
-    	// allocate gpu node at current index
-        //cudaMalloc((double**)&((*gpu_node_array)[insert_index].data), (*cpu_node)->dim * sizeof(double));
-    	(*gpu_node_array)[insert_index].data = (double*)malloc(sizeof(double) * (*cpu_node)->dim);
+	//save current index
+	unsigned int current_index = *insert_index;
+	
+    	// allocate gpu node data at current index
+    	(*gpu_node_array)[*insert_index].data = (double*)malloc(sizeof(double) * (*cpu_node)->dim);
         
     	//copy data from current cpu node to gpu node
-        (*gpu_node_array)[insert_index].level = (*cpu_node)->level;
-        (*gpu_node_array)[insert_index].metric = (*cpu_node)->metric;
-        (*gpu_node_array)[insert_index].dim = (*cpu_node)->dim;
+        (*gpu_node_array)[*insert_index].level = (*cpu_node)->level;
+        (*gpu_node_array)[*insert_index].metric = (*cpu_node)->metric;
+        (*gpu_node_array)[*insert_index].dim = (*cpu_node)->dim;
         for (int i = 0; i < (*cpu_node)->dim; i++)
     	{
-            (*gpu_node_array)[insert_index].data[i] = (*cpu_node)->data[i];
+            (*gpu_node_array)[*insert_index].data[i] = (*cpu_node)->data[i];
     	}
 
-        // cudaMemcpy((*gpu_node_array)[insert_index].data, (*cpu_node)->data, (*gpu_node_array)[insert_index].dim * sizeof(double), cudaMemcpyHostToDevice);
         
-    	// initialize left and right indicies
-	//if(((*cpu_node)->left) != NULL)
-	//{
-            (*gpu_node_array)[insert_index].left_child_index = (2 * insert_index) + 1;
-	//}
-	//else
-	//{
-            //(*gpu_node_array)[insert_index].left_child_index = -1;
-	//}
+    	// check for left child existing
+	if(((*cpu_node)->left) != NULL)
+	{
+	    //increment insert index until we run into empty spot
+	    while((*gpu_node_array)[*insert_index].metric != -1)
+	    {
+                *insert_index += 1;
+	    }
+	    //set left child index to current insert index
+	    (*gpu_node_array)[current_index].left_child_index = *insert_index;
 
-	//if(((*cpu_node)->right) != NULL)
-	//{
-            (*gpu_node_array)[insert_index].right_child_index = (2 * insert_index) + 2;
-	//}
-	//else
-	//{
-            //(*gpu_node_array)[insert_index].right_child_index = -1;
-	//}
-        (*gpu_node_array)[insert_index].parent_index = (insert_index - 1) / 2;
+	    //set parent index of child to current index
+            (*gpu_node_array)[*insert_index].parent_index = current_index;
+
+	    //recurse left
+	    convert_tree_to_array(&((*cpu_node)->left), gpu_node_array, insert_index);
+	}
+	else //otherwise, set index to negative 1, indicating a leaf node
+	{
+            (*gpu_node_array)[current_index].left_child_index = -1;
+	}
+
+	//check for right child exists
+	if(((*cpu_node)->right) != NULL)
+	{
+	    while((*gpu_node_array)[*insert_index].metric != -1)
+	    {
+                *insert_index += 1;
+	    }
+	    //set right child index to current insert index
+	    (*gpu_node_array)[current_index].right_child_index = *insert_index;
+
+	    //set parent index of child to current index
+            (*gpu_node_array)[*insert_index].parent_index = current_index;
+
+	    //recurse right
+	    convert_tree_to_array(&((*cpu_node)->right), gpu_node_array, insert_index);
+	}
+	else //otherwise, set index to negative 1, indicating a leaf node
+	{
+            (*gpu_node_array)[current_index].right_child_index = -1;
+	}
+        //(*gpu_node_array)[insert_index].parent_index = (insert_index - 1) / 2;
         //printf("INSERT INDEX: %d; current level: %d\n", insert_index,
                //(*gpu_node_array)[insert_index].level);
     	//printf("INSERT INDEX: %d; current child indicies: %d, %d\n", insert_index,
                    //(*gpu_node_array)[insert_index].left_child_index, (*gpu_node_array)[insert_index].right_child_index);
-    	// recurse left
-    	convert_tree_to_array(&((*cpu_node)->left), gpu_node_array, (2 * insert_index) + 1, max_size, index_array, index_array_insert);
 
-    	// recurse right
-        convert_tree_to_array(&((*cpu_node)->right), gpu_node_array, (2 * insert_index) + 2, max_size, index_array, index_array_insert);
     }
 }
 

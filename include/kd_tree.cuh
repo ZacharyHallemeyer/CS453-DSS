@@ -92,9 +92,9 @@ struct kd_tree_node_gpu
     double metric;
     unsigned int dim;
     double* data;
-    unsigned int left_child_index;
-    unsigned int right_child_index;
-    unsigned int parent_index;
+    int left_child_index;
+    int right_child_index;
+    int parent_index;
 };
 
 
@@ -104,10 +104,7 @@ unsigned int get_array_size(unsigned int tree_height);
 void convert_tree_to_array(
     struct kd_tree_node_cpu** cpu_node,
     struct kd_tree_node_gpu** gpu_node_array,
-    unsigned int insert_index,
-    unsigned int* max_size,
-    unsigned int* index_array,
-    unsigned int* index_array_insert
+    unsigned int* insert_index
 );
 
 
